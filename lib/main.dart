@@ -1,10 +1,25 @@
+import 'package:DoseDash/Models/SplashScreenModel.dart';
+import 'package:DoseDash/Pages/PatientScreens/PatientHomeScreen.dart';
+import 'package:DoseDash/Pages/TermsConditions.dart';
+import 'package:DoseDash/firebase_options.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import './Pages/SplashScreen.dart';
 import './Pages/AuthenticationScreen.dart'; // Import your authentication screen
 import 'Pages/RegistrationScreen.dart';
 
-void main() {
-  runApp(const MyApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => SplashScreenModel(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -24,8 +39,10 @@ class MyApp extends StatelessWidget {
         '/': (context) => const SplashScreenWidget(),
         '/authentication': (context) =>
             AuthenticationScreen(), // Define your authentication screen route
-        '/register': (context) =>
-            RegisterScreen(), // Define your registration screen route
+        '/register': (context) => RegisterScreen(),
+        '/patienthome': (context) => Patienthomescreen(),
+        '/terms_conditions': (context) => TermsConditionsScreen(),
+        //  // Define your registration screen route
       },
     );
   }
