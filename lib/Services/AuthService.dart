@@ -1,36 +1,62 @@
 import 'package:DoseDash/Pages/AuthenticationScreen.dart';
 import 'package:DoseDash/Pages/PatientScreens/PatientHomeScreen.dart';
-import 'package:DoseDash/Pages/RegistrationScreen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Authservice {
-  Future<void> signup(
-      {required String email,
-      required String password,
-      required BuildContext context}) async {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  Future<void> signup({
+    required String email,
+    required String password,
+    required String firstname,
+    required String lastname,
+    required String agerange,
+    required String address,
+    required String city,
+    required String phone,
+    required BuildContext context,
+  }) async {
     try {
-      await FirebaseAuth.instance
+      // Create a new user with email and password
+      UserCredential userCredential = await _auth
           .createUserWithEmailAndPassword(email: email, password: password);
 
       // Retrieve the current user
-      User? user = FirebaseAuth.instance.currentUser;
+      User? user = userCredential.user;
 
-      // Get the ID token
-      String? token = await user!.getIdToken();
-      //print(token);
+      if (user != null) {
+        // Get the ID token
+        String? token = await user.getIdToken();
 
-      // Save the token locally
-      await saveToken(token!);
+        // Save the token locally
+        //await saveToken(token!,);
 
-      await Future.delayed(const Duration(seconds: 1));
-      Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-              builder: (BuildContext context) => Patienthomescreen
-              ()));
+        // Create a new document in Firestore with the user's data
+        await _firestore.collection('users').doc(user.uid).set({
+          'email': email,
+          'firstname': firstname,
+          'lastname': lastname,
+          'agerange': agerange,
+          'address': address,
+          'city': city,
+          'phone': phone,
+          'role': 'patient', // Default role based on the registration screen
+          'uid': user.uid,
+        });
+
+        // Save the token locally and the role
+        await saveToken(token!, 'patient', user.uid);
+
+        // Navigate to the next screen after registration
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Navigator.pushReplacementNamed(context, '/');
+        });
+      }
     } on FirebaseAuthException catch (e) {
       String message = '';
       if (e.code == 'weak-password') {
@@ -46,37 +72,76 @@ class Authservice {
         textColor: Colors.white,
         fontSize: 14.0,
       );
-    } catch (e) {}
+    } catch (e) {
+      Fluttertoast.showToast(
+        msg: 'An error occurred. Please try again.',
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.SNACKBAR,
+        backgroundColor: Colors.black54,
+        textColor: Colors.white,
+        fontSize: 14.0,
+      );
+    }
   }
 
-  Future<void> signin(
-      {required String email,
-      required String password,
-      required BuildContext context}) async {
+  Future<void> signin({
+    required String email,
+    required String password,
+    required BuildContext context,
+  }) async {
     try {
-      await FirebaseAuth.instance
-          .signInWithEmailAndPassword(email: email, password: password);
+      // Sign in with email and password
+      await _auth.signInWithEmailAndPassword(email: email, password: password);
 
       // Retrieve the current user
-      User? user = FirebaseAuth.instance.currentUser;
+      User? user = _auth.currentUser;
 
-      // Get the ID token
-      String? token = await user!.getIdToken();
-      //print(token);
+      if (user != null) {
+        // Get the ID token
+        String? token = await user.getIdToken();
 
-      // Save the token locally
-      await saveToken(token!);
+        // Query Firestore to get the user role using email
+        DocumentSnapshot userDoc =
+            await _firestore.collection('users').doc(user.uid).get();
 
-      await Future.delayed(const Duration(seconds: 1));
-      Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-              builder: (BuildContext context) => Patienthomescreen()));
+        if (userDoc.exists) {
+          String role = userDoc['role'];
+          String userid = userDoc['uid'];
+
+          // Save the token locally
+          await saveToken(token!, role, userid);
+
+          // Navigate to the appropriate screen based on the role
+          if (role == 'patient') {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                  builder: (BuildContext context) => Patienthomescreen()),
+            );
+          } else if (role == 'pharmacy') {
+            // Navigate to pharmacy home screen if role is pharmacy
+            // Navigator.pushReplacement(
+            //   context,
+            //   MaterialPageRoute(
+            //       builder: (BuildContext context) => PharmacyHomeScreen()),
+            // );
+          }
+        } else {
+          Fluttertoast.showToast(
+            msg: 'User data not found.',
+            toastLength: Toast.LENGTH_LONG,
+            gravity: ToastGravity.SNACKBAR,
+            backgroundColor: Colors.black54,
+            textColor: Colors.white,
+            fontSize: 14.0,
+          );
+        }
+      }
     } on FirebaseAuthException catch (e) {
       String message = '';
       if (e.code == 'invalid-email') {
         message = 'No user found for that email.';
-      } else if (e.code == 'invalid-credential') {
+      } else if (e.code == 'wrong-password') {
         message = 'Wrong password provided for that user.';
       }
       Fluttertoast.showToast(
@@ -87,11 +152,20 @@ class Authservice {
         textColor: Colors.white,
         fontSize: 14.0,
       );
-    } catch (e) {}
+    } catch (e) {
+      Fluttertoast.showToast(
+        msg: 'An error occurred. Please try again.',
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.SNACKBAR,
+        backgroundColor: Colors.black54,
+        textColor: Colors.white,
+        fontSize: 14.0,
+      );
+    }
   }
 
   Future<void> signout({required BuildContext context}) async {
-    await FirebaseAuth.instance.signOut();
+    await _auth.signOut();
     clearToken();
     await Future.delayed(const Duration(seconds: 1));
     Navigator.pushReplacement(
@@ -100,21 +174,19 @@ class Authservice {
             builder: (BuildContext context) => AuthenticationScreen()));
   }
 
-  // Function to save token. To authenticate later on SharedPreferences provided by flutter as local storage
-  Future<void> saveToken(String token) async {
+  Future<void> saveToken(String token, String role, String userID) async {
     final prefs = await SharedPreferences.getInstance();
-    prefs.setString('auth_token', token);
+    prefs.setString("userid", userID);
+    prefs.setString('auth_token', token); //saving the session token
+    prefs.setString('role', role); //saving the role
   }
 
-// Function to retrieve token. To authenticate later on SharedPreferences provided by flutter as local storage
-  Future<String?> getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('auth_token');
-  }
-
-  // Function to clear token on logout
   Future<void> clearToken() async {
     final prefs = await SharedPreferences.getInstance();
+    print(prefs.get('auth_token'));
+    print(prefs.get('role'));
+    prefs.remove('userid');
     prefs.remove('auth_token');
+    prefs.remove('role');
   }
 }

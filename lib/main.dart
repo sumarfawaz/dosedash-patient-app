@@ -1,5 +1,6 @@
 import 'package:DoseDash/Models/SplashScreenModel.dart';
 import 'package:DoseDash/Pages/PatientScreens/PatientHomeScreen.dart';
+import 'package:DoseDash/Pages/SelectionScreen.dart';
 import 'package:DoseDash/Pages/TermsConditions.dart';
 import 'package:DoseDash/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -31,17 +32,18 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Flutter Demo',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.greenAccent),
         useMaterial3: true,
       ),
       initialRoute: '/',
       routes: {
-        '/': (context) => const SplashScreenWidget(),
+        '/': (context) => SplashScreenWidget(),
         '/authentication': (context) =>
             AuthenticationScreen(), // Define your authentication screen route
         '/register': (context) => RegisterScreen(),
         '/patienthome': (context) => Patienthomescreen(),
         '/terms_conditions': (context) => TermsConditionsScreen(),
+        '/selectionscreen': (context) => SelectionScreen(),
         //  // Define your registration screen route
       },
     );

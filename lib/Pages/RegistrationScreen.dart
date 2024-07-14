@@ -1,6 +1,9 @@
+import 'package:DoseDash/CustomWidgets/CitySelector.dart';
+import 'package:DoseDash/Pages/AuthenticationScreen.dart';
 import 'package:DoseDash/Services/AuthService.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import '../CustomWidgets/AgeRangeSelector.dart';
 
 class RegisterScreen extends StatefulWidget {
   RegisterScreen({Key? key}) : super(key: key);
@@ -14,13 +17,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _repeatPasswordController =
       TextEditingController();
+  final TextEditingController _firstNameController = TextEditingController();
+  final TextEditingController _lastNameController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
 
-  // Focus nodes for email and password fields
   final FocusNode _emailFocus = FocusNode();
   final FocusNode _passwordFocus = FocusNode();
   final FocusNode _rePasswordFocus = FocusNode();
+  final FocusNode _firstNameFocus = FocusNode();
+  final FocusNode _lastNameFocus = FocusNode();
+  final FocusNode _addressFocus = FocusNode();
+  final FocusNode _phoneFocus = FocusNode();
 
   bool _agreeToTerms = false; // State to track if user agrees to terms
+  String? _selectedAgeRange;
+  String? _selectedCity;
+  bool _isLoading = false; // Loading state
 
   @override
   void dispose() {
@@ -30,19 +43,89 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _emailFocus.dispose();
     _passwordFocus.dispose();
     _rePasswordFocus.dispose();
+    _firstNameController.dispose();
+    _firstNameFocus.dispose();
+    _lastNameController.dispose();
+    _lastNameFocus.dispose();
+    _addressController.dispose();
+    _addressFocus.dispose();
+    _phoneController.dispose();
+    _phoneFocus.dispose();
     super.dispose();
+  }
+
+  void _startLoading() {
+    setState(() {
+      _isLoading = true;
+    });
+  }
+
+  void _stopLoading() {
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  void _performSignUp() async {
+    if (_firstNameController.text.isEmpty) {
+      Fluttertoast.showToast(msg: "First name cannot be empty");
+      FocusScope.of(context).requestFocus(_firstNameFocus);
+    } else if (_lastNameController.text.isEmpty) {
+      Fluttertoast.showToast(msg: "Last name cannot be empty");
+      FocusScope.of(context).requestFocus(_lastNameFocus);
+    } else if (_selectedAgeRange == null) {
+      Fluttertoast.showToast(msg: "Age Category cannot be empty");
+    } else if (_addressController.text.isEmpty) {
+      Fluttertoast.showToast(msg: "Address cannot be empty");
+      FocusScope.of(context).requestFocus(_addressFocus);
+    } else if (_selectedCity == null) {
+      Fluttertoast.showToast(msg: "Area cannot be empty");
+    } else if (_phoneController.text.isEmpty) {
+      Fluttertoast.showToast(msg: "Phone number cannot be empty");
+      FocusScope.of(context).requestFocus(_phoneFocus);
+    } else if (_emailController.text.isEmpty) {
+      Fluttertoast.showToast(msg: "Email cannot be empty");
+      FocusScope.of(context).requestFocus(_emailFocus);
+    } else if (_passwordController.text.isEmpty) {
+      Fluttertoast.showToast(msg: "Password cannot be empty");
+      FocusScope.of(context).requestFocus(_passwordFocus);
+    } else if (_repeatPasswordController.text.isEmpty) {
+      Fluttertoast.showToast(msg: "Please re-enter the password");
+      FocusScope.of(context).requestFocus(_rePasswordFocus);
+    } else if (_repeatPasswordController.text.toString().trim() !=
+        _passwordController.text.toString().trim()) {
+      Fluttertoast.showToast(msg: "Passwords don't match");
+      FocusScope.of(context).requestFocus(_passwordFocus);
+    } else if (!_agreeToTerms) {
+      Fluttertoast.showToast(msg: "Please agree to terms and conditions");
+    } else if (_selectedAgeRange == null) {
+      Fluttertoast.showToast(msg: "Please select an age range");
+    } else {
+      _startLoading();
+      await Authservice().signup(
+        email: _emailController.text,
+        password: _passwordController.text,
+        firstname: _firstNameController.text,
+        lastname: _lastNameController.text,
+        agerange: _selectedAgeRange!,
+        address: _addressController.text,
+        city: _selectedCity!,
+        phone: _phoneController.text,
+        context: context,
+      );
+      _stopLoading();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Register'),
+        title: Text('Patient Registration'),
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Image at the top
           Image.asset(
             'assets/images/logo.png',
             width: 200,
@@ -57,17 +140,67 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
-                      'Create Account',
-                      textAlign: TextAlign.center,
+                      'Please enter all the required data which is denoted by (*) to complete the onboarding process',
+                      textAlign: TextAlign.justify,
                       style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        fontWeight: FontWeight.normal,
                       ),
                     ),
                     SizedBox(height: 20),
                     TextField(
                       decoration: InputDecoration(
-                        labelText: 'Email',
+                        labelText: 'First Name *',
+                        border: OutlineInputBorder(),
+                      ),
+                      controller: _firstNameController,
+                      focusNode: _firstNameFocus,
+                    ),
+                    SizedBox(height: 20),
+                    TextField(
+                      decoration: InputDecoration(
+                        labelText: 'Last Name *',
+                        border: OutlineInputBorder(),
+                      ),
+                      controller: _lastNameController,
+                      focusNode: _lastNameFocus,
+                    ),
+                    SizedBox(height: 20),
+                    AgeRangeSelector(
+                      onAgeRangeSelected: (ageRange) {
+                        setState(() {
+                          _selectedAgeRange = ageRange;
+                        });
+                      },
+                    ),
+                    SizedBox(height: 20),
+                    TextField(
+                      decoration: InputDecoration(
+                        labelText: 'Address *',
+                        border: OutlineInputBorder(),
+                      ),
+                      controller: _addressController,
+                      focusNode: _addressFocus,
+                    ),
+                    SizedBox(height: 20),
+                    Cityselector(onCityselector: (city) {
+                      setState(() {
+                        _selectedCity = city;
+                      });
+                    }),
+                    SizedBox(height: 20),
+                    TextField(
+                      decoration: InputDecoration(
+                        labelText: 'Phone number *',
+                        border: OutlineInputBorder(),
+                      ),
+                      controller: _phoneController,
+                      focusNode: _phoneFocus,
+                    ),
+                    SizedBox(height: 20),
+                    TextField(
+                      decoration: InputDecoration(
+                        labelText: 'Email *',
                         border: OutlineInputBorder(),
                       ),
                       controller: _emailController,
@@ -76,7 +209,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     SizedBox(height: 20),
                     TextField(
                       decoration: InputDecoration(
-                        labelText: 'Password',
+                        labelText: 'Password *',
                         border: OutlineInputBorder(),
                       ),
                       controller: _passwordController,
@@ -86,7 +219,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     SizedBox(height: 20),
                     TextField(
                       decoration: InputDecoration(
-                        labelText: 'Repeat Password',
+                        labelText: 'Repeat Password *',
                         border: OutlineInputBorder(),
                       ),
                       controller: _repeatPasswordController,
@@ -137,41 +270,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                ElevatedButton(
-                  onPressed: () async {
-                    if (_emailController.text.isEmpty) {
-                      Fluttertoast.showToast(msg: "Email cannot be empty");
-                      FocusScope.of(context).requestFocus(_emailFocus);
-                    } else if (_passwordController.text.isEmpty) {
-                      Fluttertoast.showToast(msg: "Password cannot be empty");
-                      FocusScope.of(context).requestFocus(_passwordFocus);
-                    } else if (_repeatPasswordController.text.isEmpty) {
-                      Fluttertoast.showToast(
-                          msg: "Please re-enter the password");
-                      FocusScope.of(context).requestFocus(_rePasswordFocus);
-                    } else if (_repeatPasswordController.text
-                            .toString()
-                            .trim() !=
-                        _passwordController.text.toString().trim()) {
-                      Fluttertoast.showToast(msg: "Passwords don't match");
-                      FocusScope.of(context).requestFocus(_passwordFocus);
-                    } else if (!_agreeToTerms) {
-                      Fluttertoast.showToast(
-                          msg: "Please agree to terms and conditions");
-                    } else {
-                      await Authservice().signup(
-                          email: _emailController.text,
-                          password: _passwordController.text,
-                          context: context);
-                    }
-                  },
-                  child: Text('Register'),
-                ),
+                Stack(alignment: Alignment.center, children: [
+                  ElevatedButton(
+                    onPressed: _isLoading ? null : _performSignUp,
+                    child: Text('Register'),
+                  ),
+                  if (_isLoading)
+                    Positioned(
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                      ),
+                    ),
+                ]),
                 SizedBox(height: 10),
                 TextButton(
                   onPressed: () {
                     // Navigate back to the authentication screen
-                    Navigator.pop(context);
+                    CircularProgressIndicator();
+                    WidgetsBinding.instance!.addPostFrameCallback((_) {
+                      Navigator.pushReplacementNamed(
+                          context, '/authentication');
+                    });
                   },
                   child: Text(
                     'Already have an account? Login',

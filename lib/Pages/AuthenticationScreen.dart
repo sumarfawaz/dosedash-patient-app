@@ -18,6 +18,48 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
   final FocusNode _passwordFocus = FocusNode();
 
   bool _agreeToTerms = false; // State to track if user agrees to terms
+  bool _isLoading = false; // Loading state
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _emailFocus.dispose();
+    _passwordFocus.dispose();
+    super.dispose();
+  }
+
+  void _startLoading() {
+    setState(() {
+      _isLoading = true;
+    });
+  }
+
+  void _stopLoading() {
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  void _performLogin() async {
+    if (_emailController.text.isEmpty) {
+      Fluttertoast.showToast(msg: "Email cannot be empty");
+      FocusScope.of(context).requestFocus(_emailFocus);
+    } else if (_passwordController.text.isEmpty) {
+      Fluttertoast.showToast(msg: "Password cannot be empty");
+      FocusScope.of(context).requestFocus(_passwordFocus);
+    } else if (!_agreeToTerms) {
+      Fluttertoast.showToast(msg: "Please agree to Terms and Conditions");
+    } else {
+      _startLoading();
+      await Authservice().signin(
+        email: _emailController.text,
+        password: _passwordController.text,
+        context: context,
+      );
+      _stopLoading();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -87,6 +129,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                             fontSize: 16,
                           ),
                         ),
+                        
                         GestureDetector(
                           onTap: () {
                             // Navigate to the terms and conditions screen
@@ -113,31 +156,26 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                ElevatedButton(
-                  onPressed: () async {
-                    if (_emailController.text.isEmpty) {
-                      Fluttertoast.showToast(msg: "Email cannot be empty");
-                      FocusScope.of(context).requestFocus(_emailFocus);
-                    } else if (_passwordController.text.isEmpty) {
-                      Fluttertoast.showToast(msg: "Password cannot be empty");
-                      FocusScope.of(context).requestFocus(_passwordFocus);
-                    } else if (!_agreeToTerms) {
-                      Fluttertoast.showToast(
-                          msg: "Please agree to Terms and Conditions");
-                    } else {
-                      await Authservice().signin(
-                          email: _emailController.text,
-                          password: _passwordController.text,
-                          context: context);
-                    }
-                  },
-                  child: Text('Login'),
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    ElevatedButton(
+                      onPressed: _isLoading ? null : _performLogin,
+                      child: Text('Login'),
+                    ),
+                    if (_isLoading)
+                      Positioned(
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                        ),
+                      ),
+                  ],
                 ),
                 SizedBox(height: 20), // Add spacing between button and link
                 GestureDetector(
                   onTap: () {
                     // Navigate to the registration screen
-                    Navigator.pushNamed(context, '/register');
+                    Navigator.pushNamed(context, '/selectionscreen');
                   },
                   child: Container(
                     alignment: Alignment.center,
