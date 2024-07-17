@@ -1,5 +1,6 @@
 import 'package:DoseDash/Pages/AuthenticationScreen.dart';
 import 'package:DoseDash/Pages/PatientScreens/PatientHomeScreen.dart';
+import 'package:DoseDash/Pages/PharmacyScreens/PharmacyHomeScreen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -84,6 +85,55 @@ class Authservice {
     }
   }
 
+  Future<void> signupPharmacy({
+    required String email,
+    required String password,
+    required String licenseNo,
+    required String pharmacyName,
+    required String address,
+    required String city,
+    required String phone,
+    required String bankName,
+    required String bankAccountNo,
+    required String bankBranch,
+    required BuildContext context,
+  }) async {
+    try {
+      UserCredential userCredential = await _auth
+          .createUserWithEmailAndPassword(email: email, password: password);
+
+      User? user = userCredential.user;
+
+      if (user != null) {
+        // Storing pharmacy information in Firestore
+        await _firestore.collection('pharmacies').doc(user.uid).set({
+          'licenseNo': licenseNo,
+          'pharmacyName': pharmacyName,
+          'address': address,
+          'city': city,
+          'phone': phone,
+          'bankName': bankName,
+          'bankAccountNo': bankAccountNo,
+          'bankBranch': bankBranch,
+          'email': email,
+          'role': 'pharmacy',
+          'uid': user.uid,
+        });
+
+        // Retrieving and storing the token and UID in SharedPreferences
+        String? token = await user.getIdToken();
+        await saveToken(token!, 'pharmacy', user.uid);
+
+        Fluttertoast.showToast(msg: "Registration Successful");
+        Navigator.pushNamed(context, '/');
+      }
+    } on FirebaseAuthException catch (e) {
+      Fluttertoast.showToast(msg: e.message ?? "Registration failed");
+    } catch (e) {
+      Fluttertoast.showToast(msg: "An error occurred. Please try again.");
+    }
+  }
+
   Future<void> signin({
     required String email,
     required String password,
@@ -100,7 +150,7 @@ class Authservice {
         // Get the ID token
         String? token = await user.getIdToken();
 
-        // Query Firestore to get the user role using email
+        // Check the users collection first
         DocumentSnapshot userDoc =
             await _firestore.collection('users').doc(user.uid).get();
 
@@ -118,23 +168,37 @@ class Authservice {
               MaterialPageRoute(
                   builder: (BuildContext context) => Patienthomescreen()),
             );
-          } else if (role == 'pharmacy') {
-            // Navigate to pharmacy home screen if role is pharmacy
-            // Navigator.pushReplacement(
-            //   context,
-            //   MaterialPageRoute(
-            //       builder: (BuildContext context) => PharmacyHomeScreen()),
-            // );
           }
         } else {
-          Fluttertoast.showToast(
-            msg: 'User data not found.',
-            toastLength: Toast.LENGTH_LONG,
-            gravity: ToastGravity.SNACKBAR,
-            backgroundColor: Colors.black54,
-            textColor: Colors.white,
-            fontSize: 14.0,
-          );
+          // If not found in users, check the pharmacies collection
+          DocumentSnapshot pharmacyDoc =
+              await _firestore.collection('pharmacies').doc(user.uid).get();
+
+          if (pharmacyDoc.exists) {
+            String role = pharmacyDoc['role'];
+            String userid = pharmacyDoc['uid'];
+
+            // Save the token locally
+            await saveToken(token!, role, userid);
+
+            // Navigate to the pharmacy home screen if role is pharmacy
+            if (role == 'pharmacy') {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                    builder: (BuildContext context) => PharmacyHomeScreen()),
+              );
+            }
+          } else {
+            Fluttertoast.showToast(
+              msg: 'User data not found.',
+              toastLength: Toast.LENGTH_LONG,
+              gravity: ToastGravity.SNACKBAR,
+              backgroundColor: Colors.black54,
+              textColor: Colors.white,
+              fontSize: 14.0,
+            );
+          }
         }
       }
     } on FirebaseAuthException catch (e) {
@@ -153,6 +217,8 @@ class Authservice {
         fontSize: 14.0,
       );
     } catch (e) {
+      // Log the error message
+      print('Error: $e');
       Fluttertoast.showToast(
         msg: 'An error occurred. Please try again.',
         toastLength: Toast.LENGTH_LONG,

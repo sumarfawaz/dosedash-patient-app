@@ -1,56 +1,66 @@
 import 'package:DoseDash/CustomWidgets/CitySelector.dart';
-import 'package:DoseDash/Pages/AuthenticationScreen.dart';
 import 'package:DoseDash/Services/AuthService.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import '../CustomWidgets/AgeRangeSelector.dart';
+import '../CustomWidgets/CitySelector.dart';
 
-class RegisterScreen extends StatefulWidget {
-  RegisterScreen({Key? key}) : super(key: key);
+class PharmacyRegisterScreen extends StatefulWidget {
+  PharmacyRegisterScreen({Key? key}) : super(key: key);
 
   @override
-  _RegisterScreenState createState() => _RegisterScreenState();
+  _PharmacyRegisterScreenState createState() => _PharmacyRegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _PharmacyRegisterScreenState extends State<PharmacyRegisterScreen> {
+  final TextEditingController _licenseController = TextEditingController();
+  final TextEditingController _pharmacyNameController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _bankNameController = TextEditingController();
+  final TextEditingController _bankAccountController = TextEditingController();
+  final TextEditingController _bankBranchController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _repeatPasswordController =
       TextEditingController();
-  final TextEditingController _firstNameController = TextEditingController();
-  final TextEditingController _lastNameController = TextEditingController();
-  final TextEditingController _addressController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
 
+  final FocusNode _licenseFocus = FocusNode();
+  final FocusNode _pharmacyNameFocus = FocusNode();
+  final FocusNode _addressFocus = FocusNode();
+  final FocusNode _phoneFocus = FocusNode();
+  final FocusNode _bankNameFocus = FocusNode();
+  final FocusNode _bankAccountFocus = FocusNode();
+  final FocusNode _bankBranchFocus = FocusNode();
   final FocusNode _emailFocus = FocusNode();
   final FocusNode _passwordFocus = FocusNode();
   final FocusNode _rePasswordFocus = FocusNode();
-  final FocusNode _firstNameFocus = FocusNode();
-  final FocusNode _lastNameFocus = FocusNode();
-  final FocusNode _addressFocus = FocusNode();
-  final FocusNode _phoneFocus = FocusNode();
 
   bool _agreeToTerms = false; // State to track if user agrees to terms
-  String? _selectedAgeRange;
   String? _selectedCity;
-  bool _isLoading = false; // Loading state
+  bool _isLoading = false;
 
   @override
   void dispose() {
+    _licenseController.dispose();
+    _pharmacyNameController.dispose();
+    _addressController.dispose();
+    _phoneController.dispose();
+    _bankNameController.dispose();
+    _bankAccountController.dispose();
+    _bankBranchController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _repeatPasswordController.dispose();
+    _licenseFocus.dispose();
+    _pharmacyNameFocus.dispose();
+    _addressFocus.dispose();
+    _phoneFocus.dispose();
+    _bankNameFocus.dispose();
+    _bankAccountFocus.dispose();
+    _bankBranchFocus.dispose();
     _emailFocus.dispose();
     _passwordFocus.dispose();
     _rePasswordFocus.dispose();
-    _firstNameController.dispose();
-    _firstNameFocus.dispose();
-    _lastNameController.dispose();
-    _lastNameFocus.dispose();
-    _addressController.dispose();
-    _addressFocus.dispose();
-    _phoneController.dispose();
-    _phoneFocus.dispose();
     super.dispose();
   }
 
@@ -67,22 +77,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _performSignUp() async {
-    if (_firstNameController.text.isEmpty) {
-      Fluttertoast.showToast(msg: "First name cannot be empty");
-      FocusScope.of(context).requestFocus(_firstNameFocus);
-    } else if (_lastNameController.text.isEmpty) {
-      Fluttertoast.showToast(msg: "Last name cannot be empty");
-      FocusScope.of(context).requestFocus(_lastNameFocus);
-    } else if (_selectedAgeRange == null) {
-      Fluttertoast.showToast(msg: "Age Category cannot be empty");
+    if (_licenseController.text.isEmpty) {
+      Fluttertoast.showToast(msg: "License number cannot be empty");
+      FocusScope.of(context).requestFocus(_licenseFocus);
+    } else if (_pharmacyNameController.text.isEmpty) {
+      Fluttertoast.showToast(msg: "Pharmacy name cannot be empty");
+      FocusScope.of(context).requestFocus(_pharmacyNameFocus);
     } else if (_addressController.text.isEmpty) {
       Fluttertoast.showToast(msg: "Address cannot be empty");
       FocusScope.of(context).requestFocus(_addressFocus);
     } else if (_selectedCity == null) {
-      Fluttertoast.showToast(msg: "Area cannot be empty");
+      Fluttertoast.showToast(msg: "City cannot be empty");
     } else if (_phoneController.text.isEmpty) {
       Fluttertoast.showToast(msg: "Phone number cannot be empty");
       FocusScope.of(context).requestFocus(_phoneFocus);
+    } else if (_bankNameController.text.isEmpty) {
+      Fluttertoast.showToast(msg: "Bank name cannot be empty");
+      FocusScope.of(context).requestFocus(_bankNameFocus);
+    } else if (_bankAccountController.text.isEmpty) {
+      Fluttertoast.showToast(msg: "Bank account number cannot be empty");
+      FocusScope.of(context).requestFocus(_bankAccountFocus);
+    } else if (_bankBranchController.text.isEmpty) {
+      Fluttertoast.showToast(msg: "Bank branch cannot be empty");
+      FocusScope.of(context).requestFocus(_bankBranchFocus);
     } else if (_emailController.text.isEmpty) {
       Fluttertoast.showToast(msg: "Email cannot be empty");
       FocusScope.of(context).requestFocus(_emailFocus);
@@ -96,21 +113,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _passwordController.text.toString().trim()) {
       Fluttertoast.showToast(msg: "Passwords don't match");
       FocusScope.of(context).requestFocus(_passwordFocus);
-    } else if (_selectedAgeRange == null) {
-      Fluttertoast.showToast(msg: "Please select an age range");
     } else if (!_agreeToTerms) {
       Fluttertoast.showToast(msg: "Please agree to terms and conditions");
     } else {
       _startLoading();
-      await Authservice().signup(
+      await Authservice().signupPharmacy(
         email: _emailController.text,
         password: _passwordController.text,
-        firstname: _firstNameController.text,
-        lastname: _lastNameController.text,
-        agerange: _selectedAgeRange!,
+        licenseNo: _licenseController.text,
+        pharmacyName: _pharmacyNameController.text,
         address: _addressController.text,
         city: _selectedCity!,
         phone: _phoneController.text,
+        bankName: _bankNameController.text,
+        bankAccountNo: _bankAccountController.text,
+        bankBranch: _bankBranchController.text,
         context: context,
       );
       _stopLoading();
@@ -121,7 +138,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Patient Registration'),
+        title: Text('Pharmacy Registration'),
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -150,33 +167,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     SizedBox(height: 20),
                     TextField(
                       decoration: InputDecoration(
-                        labelText: 'First Name *',
+                        labelText: 'Pharmacy License Number *',
                         border: OutlineInputBorder(),
                       ),
-                      controller: _firstNameController,
-                      focusNode: _firstNameFocus,
+                      controller: _licenseController,
+                      focusNode: _licenseFocus,
                     ),
                     SizedBox(height: 20),
                     TextField(
                       decoration: InputDecoration(
-                        labelText: 'Last Name *',
+                        labelText: 'Pharmacy Name *',
                         border: OutlineInputBorder(),
                       ),
-                      controller: _lastNameController,
-                      focusNode: _lastNameFocus,
-                    ),
-                    SizedBox(height: 20),
-                    AgeRangeSelector(
-                      onAgeRangeSelected: (ageRange) {
-                        setState(() {
-                          _selectedAgeRange = ageRange;
-                        });
-                      },
+                      controller: _pharmacyNameController,
+                      focusNode: _pharmacyNameFocus,
                     ),
                     SizedBox(height: 20),
                     TextField(
                       decoration: InputDecoration(
-                        labelText: 'Address *',
+                        labelText: 'Pharmacy Address *',
                         border: OutlineInputBorder(),
                       ),
                       controller: _addressController,
@@ -191,11 +200,38 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     SizedBox(height: 20),
                     TextField(
                       decoration: InputDecoration(
-                        labelText: 'Phone number *',
+                        labelText: 'Pharmacy Contact *',
                         border: OutlineInputBorder(),
                       ),
                       controller: _phoneController,
                       focusNode: _phoneFocus,
+                    ),
+                    SizedBox(height: 20),
+                    TextField(
+                      decoration: InputDecoration(
+                        labelText: 'Bank Name *',
+                        border: OutlineInputBorder(),
+                      ),
+                      controller: _bankNameController,
+                      focusNode: _bankNameFocus,
+                    ),
+                    SizedBox(height: 20),
+                    TextField(
+                      decoration: InputDecoration(
+                        labelText: 'Bank Account Number *',
+                        border: OutlineInputBorder(),
+                      ),
+                      controller: _bankAccountController,
+                      focusNode: _bankAccountFocus,
+                    ),
+                    SizedBox(height: 20),
+                    TextField(
+                      decoration: InputDecoration(
+                        labelText: 'Bank Branch *',
+                        border: OutlineInputBorder(),
+                      ),
+                      controller: _bankBranchController,
+                      focusNode: _bankBranchFocus,
                     ),
                     SizedBox(height: 20),
                     TextField(

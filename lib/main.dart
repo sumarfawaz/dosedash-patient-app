@@ -1,5 +1,7 @@
 import 'package:DoseDash/Models/SplashScreenModel.dart';
 import 'package:DoseDash/Pages/PatientScreens/PatientHomeScreen.dart';
+import 'package:DoseDash/Pages/PharmacyRegistrationScreen.dart';
+import 'package:DoseDash/Pages/PharmacyScreens/PharmacyHomeScreen.dart';
 import 'package:DoseDash/Pages/SelectionScreen.dart';
 import 'package:DoseDash/Pages/TermsConditions.dart';
 import 'package:DoseDash/firebase_options.dart';
@@ -44,6 +46,8 @@ class MyApp extends StatelessWidget {
         '/patienthome': (context) => Patienthomescreen(),
         '/terms_conditions': (context) => TermsConditionsScreen(),
         '/selectionscreen': (context) => SelectionScreen(),
+        '/pharmacyregister': (context) => PharmacyRegisterScreen(),
+        '/pharmacyhome': (context) => PharmacyHomeScreen(),
         //  // Define your registration screen route
       },
     );

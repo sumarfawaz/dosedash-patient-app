@@ -31,6 +31,7 @@ class SelectionScreen extends StatelessWidget {
               text: 'Pharmacy',
               onPressed: () {
                 // Handle pharmacy selection
+                Navigator.pushNamed(context, '/pharmacyregister');
               },
             ),
           ],

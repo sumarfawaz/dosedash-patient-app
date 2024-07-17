@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../Models/SplashScreenModel.dart'; // Import your SplashScreenModel
 import './AuthenticationScreen.dart'; // Import your authentication screen
-import '../Pages/PatientScreens/PatientHomeScreen.dart'; // Import your home screen or desired screen
+import '../Pages/PatientScreens/PatientHomeScreen.dart'; // Import your patient home screen
+import '../Pages/PharmacyScreens/PharmacyHomeScreen.dart'; // Import your pharmacy home screen
 
 class SplashScreenWidget extends StatefulWidget {
   const SplashScreenWidget({Key? key}) : super(key: key);
@@ -32,12 +33,6 @@ class _SplashScreenWidgetState extends State<SplashScreenWidget> {
           // Listen to changes in SplashScreenModel and react accordingly
           if (model.isLoading) {
             // Display loading indicator while checking login status
-            // return Scaffold(
-            //   backgroundColor: Colors.white,
-            //   body: Center(
-            //     child: CircularProgressIndicator(),
-            //   ),
-            // );
             return Scaffold(
               key: scaffoldKey,
               backgroundColor: Colors.white,
@@ -76,12 +71,19 @@ class _SplashScreenWidgetState extends State<SplashScreenWidget> {
               ),
             );
           } else {
-            // Determine where to navigate based on login status
+            // Determine where to navigate based on login status and role
             if (model.isLoggedIn) {
-              // Navigate to home screen
-              WidgetsBinding.instance!.addPostFrameCallback((_) {
-                Navigator.pushReplacementNamed(context, '/patienthome');
-              });
+              if (model.role == 'patient') {
+                // Navigate to patient home screen
+                WidgetsBinding.instance!.addPostFrameCallback((_) {
+                  Navigator.pushReplacementNamed(context, '/patienthome');
+                });
+              } else if (model.role == 'pharmacy') {
+                // Navigate to pharmacy home screen
+                WidgetsBinding.instance!.addPostFrameCallback((_) {
+                  Navigator.pushReplacementNamed(context, '/pharmacyhome');
+                });
+              }
             } else {
               // Navigate to authentication screen
               WidgetsBinding.instance!.addPostFrameCallback((_) {
