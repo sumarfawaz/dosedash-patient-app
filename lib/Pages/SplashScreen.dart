@@ -57,7 +57,7 @@ class _SplashScreenWidgetState extends State<SplashScreenWidget> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(16.0),
                       child: const Text(
-                        'Group 09',
+                        'Beta',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontFamily: 'Readex Pro',
