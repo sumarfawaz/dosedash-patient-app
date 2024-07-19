@@ -204,9 +204,67 @@ class Authservice {
     } on FirebaseAuthException catch (e) {
       String message = '';
       if (e.code == 'invalid-email') {
+        message = 'Invalid email address.';
+      } else if (e.code == 'user-not-found') {
         message = 'No user found for that email.';
       } else if (e.code == 'wrong-password') {
         message = 'Wrong password provided for that user.';
+      } else if (e.code == 'user-disabled') {
+        message = 'This user has been disabled.';
+      } else if (e.code == 'too-many-requests') {
+        message = 'Too many login attempts. Please try again later.';
+      } else if (e.code == 'operation-not-allowed') {
+        message = 'Email/password accounts are not enabled.';
+      } else {
+        message = e.message ?? 'An undefined error occurred.';
+      }
+      Fluttertoast.showToast(
+        msg: message,
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.SNACKBAR,
+        backgroundColor: Colors.black54,
+        textColor: Colors.white,
+        fontSize: 14.0,
+      );
+    } catch (e) {
+      // Log the error message
+      print('Error: $e');
+      Fluttertoast.showToast(
+        msg: 'An error occurred. Please try again.',
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.SNACKBAR,
+        backgroundColor: Colors.black54,
+        textColor: Colors.white,
+        fontSize: 14.0,
+      );
+    }
+  }
+
+  Future<void> recoverPassword({
+    required String email,
+    required BuildContext context,
+  }) async {
+    try {
+      // Send password reset email
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+
+      // Show success toast
+      Fluttertoast.showToast(
+        msg: 'Password reset email sent.',
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.SNACKBAR,
+        backgroundColor: Colors.black54,
+        textColor: Colors.white,
+        fontSize: 14.0,
+      );
+    } on FirebaseAuthException catch (e) {
+      String message = '';
+      if (e.code == 'invalid-email') {
+        message = 'Invalid email address.';
+      } else if (e.code == 'user-not-found') {
+        message = 'No user found for that email.';
+      } else {
+        message = e.message ?? 'An error occurred. Please try again.';
       }
       Fluttertoast.showToast(
         msg: message,

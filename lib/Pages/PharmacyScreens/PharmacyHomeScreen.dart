@@ -18,6 +18,9 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
   User? _user;
   Map<String, dynamic>? _pharmacyData;
   int _selectedIndex = 0;
+  int _ongoingOrders = 0;
+  int _completedOrders = 0;
+  int _totalMedicines = 0;
 
   @override
   void initState() {
@@ -39,8 +42,38 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
             .doc(userId)
             .get();
 
+        QuerySnapshot ordersSnapshot =
+            await FirebaseFirestore.instance.collection('orders').get();
+
+        int ongoingOrders = 0;
+        int completedOrders = 0;
+
+        for (var order in ordersSnapshot.docs) {
+          List orderItems = order['orderItems'];
+          for (var item in orderItems) {
+            if (item['pharmacyId'] == userId) {
+              if (order['orderStatus'] == 'on progress') {
+                ongoingOrders++;
+              } else if (order['orderStatus'] == 'completed') {
+                completedOrders++;
+              }
+              break;
+            }
+          }
+        }
+
+        // Fetch total medicines count
+        QuerySnapshot medicinesSnapshot = await FirebaseFirestore.instance
+            .collection('medicines')
+            .where('pharmacyId', isEqualTo: userId)
+            .get();
+
         setState(() {
           _pharmacyData = pharmacyDoc.data() as Map<String, dynamic>?;
+          _ongoingOrders = ongoingOrders;
+          _completedOrders = completedOrders;
+          _totalMedicines =
+              medicinesSnapshot.size; // Set the count of medicines
         });
       }
     } else {
@@ -86,27 +119,27 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
                     children: [
                       _buildInfoCard(
                         title: 'License No',
-                        value: _pharmacyData!['licenseNo'],
+                        value: _pharmacyData!['licenseNo'] ?? 'N/A',
                       ),
                       _buildInfoCard(
                         title: 'City',
-                        value: _pharmacyData!['city'],
+                        value: _pharmacyData!['city'] ?? 'N/A',
                       ),
                       _buildInfoCard(
                         title: 'Contact',
-                        value: _pharmacyData!['phone'],
+                        value: _pharmacyData!['phone'] ?? 'N/A',
                       ),
                       _buildInfoCard(
                         title: 'Ongoing Orders',
-                        value: _pharmacyData!['ongoingOrders'] ?? 0,
+                        value: _ongoingOrders.toString(),
                       ),
                       _buildInfoCard(
                         title: 'Completed Orders',
-                        value: _pharmacyData!['completedOrders'] ?? 0,
+                        value: _completedOrders.toString(),
                       ),
                       _buildInfoCard(
                         title: 'Total Medicines',
-                        value: _pharmacyData!['totalMedicines'] ?? 0,
+                        value: _totalMedicines.toString(),
                       ),
                     ],
                   ),
@@ -207,11 +240,13 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
               backgroundColor: Colors.white),
         ],
         currentIndex: _selectedIndex,
-        selectedItemColor: Colors.blueAccent,
+        selectedItemColor: Colors.greenAccent,
         unselectedItemColor: Colors.blueGrey,
-        unselectedLabelStyle: TextStyle(color: Colors.blueGrey),
-        selectedLabelStyle: TextStyle(color: Colors.black),
+        selectedLabelStyle: TextStyle(fontSize: 12),
+        unselectedLabelStyle: TextStyle(fontSize: 12),
+        showUnselectedLabels: true,
         onTap: _onItemTapped,
+        iconSize: 30,
       ),
     );
   }

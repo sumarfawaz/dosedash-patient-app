@@ -62,15 +62,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Profile updated successfully')),
       );
+
+      Navigator.pushNamed(context, '/');
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Profile')),
-      body: SingleChildScrollView( 
-        child:  _isLoading
+      appBar: AppBar(
+        title: Text('Profile'),
+        automaticallyImplyLeading: false,
+        centerTitle: true,
+      ),
+      body: _isLoading
           ? Center(child: CircularProgressIndicator())
           : Padding(
               padding: const EdgeInsets.all(16.0),
@@ -131,7 +136,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
             ),
-      ),
     );
   }
 }

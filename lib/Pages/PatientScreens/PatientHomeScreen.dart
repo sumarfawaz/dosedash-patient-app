@@ -17,7 +17,8 @@ class Patienthomescreen extends StatefulWidget {
   _PatientHomeScreenState createState() => _PatientHomeScreenState();
 }
 
-class _PatientHomeScreenState extends State<Patienthomescreen> {
+class _PatientHomeScreenState extends State<Patienthomescreen>
+    with AutomaticKeepAliveClientMixin {
   User? _user;
   Map<String, dynamic>? _userData;
   int _selectedIndex = 0;
@@ -91,6 +92,15 @@ class _PatientHomeScreenState extends State<Patienthomescreen> {
     });
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_selectedIndex == 0) {
+      _fetchMedicines();
+      _fetchUserData();
+    }
+  }
+
   Widget _getSelectedScreen() {
     switch (_selectedIndex) {
       case 1:
@@ -105,6 +115,7 @@ class _PatientHomeScreenState extends State<Patienthomescreen> {
   }
 
   Widget _buildHomeScreen() {
+    super.build(context);
     return Center(
       child: _userData == null
           ? CircularProgressIndicator()
@@ -172,7 +183,7 @@ class _PatientHomeScreenState extends State<Patienthomescreen> {
                                   ),
                                   SizedBox(height: 4),
                                   Text(
-                                    '\$${medicine.price.toStringAsFixed(2)}',
+                                    '\රු${medicine.price.toStringAsFixed(2)}',
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
@@ -197,7 +208,7 @@ class _PatientHomeScreenState extends State<Patienthomescreen> {
                                     ),
                                   );
                                 },
-                                child: Text('Details'),
+                                child: Text('Buy'),
                               ),
                             ),
                           ],
@@ -219,6 +230,8 @@ class _PatientHomeScreenState extends State<Patienthomescreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(
+        context); // Call to super.build for AutomaticKeepAliveClientMixin
     return Scaffold(
       appBar: AppBar(
         title: Text('DoseDash'),
@@ -238,26 +251,30 @@ class _PatientHomeScreenState extends State<Patienthomescreen> {
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
-            icon: Icon(Icons.home),
+            icon: Icon(Icons.home, size: 30),
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart),
+            icon: Icon(Icons.shopping_cart, size: 30),
             label: 'Cart',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.upload),
+            icon: Icon(Icons.upload, size: 30),
             label: 'Upload',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.account_circle),
+            icon: Icon(Icons.account_circle, size: 30),
             label: 'Profile',
           ),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.greenAccent,
         unselectedItemColor: Colors.blueGrey,
+        selectedLabelStyle: TextStyle(fontSize: 12),
+        unselectedLabelStyle: TextStyle(fontSize: 12),
+        showUnselectedLabels: true,
         onTap: _onItemTapped,
+        iconSize: 30, // Set the uniform icon size
       ),
     );
   }
@@ -281,6 +298,9 @@ class _PatientHomeScreenState extends State<Patienthomescreen> {
       },
     );
   }
+
+  @override
+  bool get wantKeepAlive => true; // Ensure the state is kept alive
 }
 
 class Medicine {

@@ -66,6 +66,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Authentication'),
+        automaticallyImplyLeading: false,
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -107,6 +108,22 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                 obscureText: true,
                 controller: _passwordController,
                 focusNode: _passwordFocus,
+              ),
+              SizedBox(height: 20),
+              GestureDetector(
+                onTap: () {
+                  // Navigate to the registration screen
+                  Navigator.pushNamed(context, '/passwordrecovery');
+                },
+                child: Container(
+                  alignment: Alignment.topLeft,
+                  child: Text(
+                    'Forgot password? Click here!',
+                    style: TextStyle(
+                      color: Colors.redAccent,
+                    ),
+                  ),
+                ),
               ),
               SizedBox(height: 20),
               Row(

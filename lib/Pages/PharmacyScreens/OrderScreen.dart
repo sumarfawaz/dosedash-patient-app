@@ -8,6 +8,8 @@ class OrdersScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('Orders'),
+        automaticallyImplyLeading: false,
+        centerTitle: true,
       ),
       body: FutureBuilder<String>(
         future: _fetchPharmacyId(),

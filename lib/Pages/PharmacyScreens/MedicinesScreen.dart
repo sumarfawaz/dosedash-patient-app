@@ -166,77 +166,76 @@ class _MedicinesScreenState extends State<MedicinesScreen> {
       appBar: AppBar(
         title: Text('Medicines'),
         automaticallyImplyLeading: false,
+        centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        child: FutureBuilder<String?>(
-          future: _userIdFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator());
-            }
+      body: FutureBuilder<String?>(
+        future: _userIdFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          }
 
-            if (!snapshot.hasData || snapshot.data == null) {
-              return Center(child: Text('User ID not found.'));
-            }
+          if (!snapshot.hasData || snapshot.data == null) {
+            return Center(child: Text('User ID not found.'));
+          }
 
-            String userId = snapshot.data!;
+          String userId = snapshot.data!;
 
-            return StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('medicines')
-                  .where('pharmacyId', isEqualTo: userId)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return Center(child: CircularProgressIndicator());
-                }
+          return StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('medicines')
+                .where('pharmacyId', isEqualTo: userId)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return Center(child: CircularProgressIndicator());
+              }
 
-                if (snapshot.data!.docs.isEmpty) {
-                  return Center(child: Text('No medicines found.'));
-                }
+              if (snapshot.data!.docs.isEmpty) {
+                return Center(child: Text('No medicines found.'));
+              }
 
-                return ListView.builder(
-                  itemCount: snapshot.data!.docs.length,
-                  itemBuilder: (context, index) {
-                    DocumentSnapshot doc = snapshot.data!.docs[index];
-                    String imageBase64 = doc['medicineImageBase64'];
-                    Image? image;
-                    if (imageBase64.isNotEmpty) {
-                      image = Image.memory(base64Decode(imageBase64));
-                    }
+              return ListView.builder(
+                itemCount: snapshot.data!.docs.length,
+                itemBuilder: (context, index) {
+                  DocumentSnapshot doc = snapshot.data!.docs[index];
+                  String imageBase64 = doc['medicineImageBase64'];
+                  Image? image;
+                  if (imageBase64.isNotEmpty) {
+                    image = Image.memory(base64Decode(imageBase64));
+                  }
 
-                    return Card(
-                      child: ListTile(
-                        leading: image != null
-                            ? Container(
-                                width: 50,
-                                height: 50,
-                                child: image,
-                              )
-                            : null,
-                        title: Text(doc['medicineName']),
-                        subtitle: Text(doc['brandName']),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: Icon(Icons.edit),
-                              onPressed: () => _updateMedicine(doc),
-                            ),
-                            IconButton(
-                              icon: Icon(Icons.delete),
-                              onPressed: () => _deleteMedicine(doc.id),
-                            ),
-                          ],
-                        ),
+                  return Card(
+                    child: ListTile(
+                      leading: image != null
+                          ? Container(
+                              width: 50,
+                              height: 50,
+                              child: image,
+                            )
+                          : null,
+                      title: Text(doc['medicineName']),
+                      subtitle: Text(doc['brandName']),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.edit),
+                            onPressed: () => _updateMedicine(doc),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.delete),
+                            onPressed: () => _deleteMedicine(doc.id),
+                          ),
+                        ],
                       ),
-                    );
-                  },
-                );
-              },
-            );
-          },
-        ),
+                    ),
+                  );
+                },
+              );
+            },
+          );
+        },
       ),
     );
   }

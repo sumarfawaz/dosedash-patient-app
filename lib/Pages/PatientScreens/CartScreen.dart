@@ -129,38 +129,48 @@ class _CartScreenState extends State<CartScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Cart'),
+        automaticallyImplyLeading: false,
+        centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView.builder(
-                itemCount: widget.globalCart.length,
-                itemBuilder: (context, index) {
-                  var item = widget.globalCart[index];
-                  return ListTile(
-                    title: Text(item.name),
-                    subtitle: Text(
-                        '${item.brand}\n\$${item.price.toStringAsFixed(2)} x ${item.quantity} = \$${(item.price * item.quantity).toStringAsFixed(2)}'),
-                    trailing: IconButton(
-                      icon: Icon(Icons.remove_shopping_cart),
-                      onPressed: () {
-                        setState(() {
-                          widget.globalCart.removeAt(index);
-                        });
-                      },
+      body: Column(
+        children: [
+          Expanded(
+            child: widget.globalCart.isEmpty
+                ? Center(
+                    child: Text(
+                      'Your cart is empty',
+                      style: TextStyle(fontSize: 24),
                     ),
-                  );
-                },
-              ),
-            ),
+                  )
+                : ListView.builder(
+                    itemCount: widget.globalCart.length,
+                    itemBuilder: (context, index) {
+                      var item = widget.globalCart[index];
+                      return ListTile(
+                        title: Text(item.name),
+                        subtitle: Text(
+                          '${item.brand}\n\රු${item.price.toStringAsFixed(2)} x ${item.quantity} = \රු${(item.price * item.quantity).toStringAsFixed(2)}',
+                        ),
+                        trailing: IconButton(
+                          icon: Icon(Icons.remove_shopping_cart),
+                          onPressed: () {
+                            setState(() {
+                              widget.globalCart.removeAt(index);
+                            });
+                          },
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          if (widget.globalCart.isNotEmpty)
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Total: \$${_totalPrice.toStringAsFixed(2)}',
+                    'Total: \රු${_totalPrice.toStringAsFixed(2)}',
                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                     textAlign: TextAlign.right,
                   ),
@@ -172,8 +182,7 @@ class _CartScreenState extends State<CartScreen> {
                 ],
               ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }

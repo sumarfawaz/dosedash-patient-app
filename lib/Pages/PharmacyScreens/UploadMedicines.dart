@@ -22,7 +22,7 @@ class _UploadMedicineScreenState extends State<UploadMedicineScreen> {
   double _unitPrice = 0.0;
   String _dosage = '';
   bool _prescriptionRequired = false;
-  
+
   String _medicineCategory = '';
 
   final picker = ImagePicker();
@@ -98,6 +98,7 @@ class _UploadMedicineScreenState extends State<UploadMedicineScreen> {
       appBar: AppBar(
         title: Text('Upload Medicine'),
         centerTitle: true,
+        automaticallyImplyLeading: false,
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(20.0),

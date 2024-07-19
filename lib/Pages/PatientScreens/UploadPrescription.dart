@@ -29,9 +29,9 @@ class _UploadPrescriptionState extends State<UploadPrescriptionScreen> {
       appBar: AppBar(
         title: Text('Order List'),
         automaticallyImplyLeading: false,
+        centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        child:  _userId != null
+      body: _userId != null
           ? StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('orders')
@@ -45,7 +45,11 @@ class _UploadPrescriptionState extends State<UploadPrescriptionScreen> {
                   return Center(child: Text('Error: ${snapshot.error}'));
                 }
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return Center(child: Text('No orders found.'));
+                  return Center(
+                      child: Text(
+                    'No orders found.',
+                    style: TextStyle(fontSize: 24),
+                  ));
                 }
 
                 return ListView.builder(
@@ -71,7 +75,6 @@ class _UploadPrescriptionState extends State<UploadPrescriptionScreen> {
             )
           : Center(
               child: CircularProgressIndicator(),
-            ),
             ),
     );
   }
