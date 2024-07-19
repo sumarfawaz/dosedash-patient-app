@@ -30,7 +30,8 @@ class _UploadPrescriptionState extends State<UploadPrescriptionScreen> {
         title: Text('Order List'),
         automaticallyImplyLeading: false,
       ),
-      body: _userId != null
+      body: SingleChildScrollView(
+        child:  _userId != null
           ? StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('orders')
@@ -70,6 +71,7 @@ class _UploadPrescriptionState extends State<UploadPrescriptionScreen> {
             )
           : Center(
               child: CircularProgressIndicator(),
+            ),
             ),
     );
   }

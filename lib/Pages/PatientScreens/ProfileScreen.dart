@@ -69,7 +69,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Profile')),
-      body: _isLoading
+      body: SingleChildScrollView( 
+        child:  _isLoading
           ? Center(child: CircularProgressIndicator())
           : Padding(
               padding: const EdgeInsets.all(16.0),
@@ -130,6 +131,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
             ),
+      ),
     );
   }
 }

@@ -123,184 +123,186 @@ class _RegisterScreenState extends State<RegisterScreen> {
       appBar: AppBar(
         title: Text('Patient Registration'),
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Image.asset(
-            'assets/images/logo.png',
-            width: 200,
-            height: 200,
-            fit: BoxFit.cover,
-          ),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Please enter all the required data which is denoted by (*) to complete the onboarding process',
-                      textAlign: TextAlign.justify,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.normal,
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Image.asset(
+              'assets/images/logo.png',
+              width: 200,
+              height: 200,
+              fit: BoxFit.cover,
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Please enter all the required data which is denoted by (*) to complete the onboarding process',
+                        textAlign: TextAlign.justify,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.normal,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 20),
-                    TextField(
-                      decoration: InputDecoration(
-                        labelText: 'First Name *',
-                        border: OutlineInputBorder(),
+                      SizedBox(height: 20),
+                      TextField(
+                        decoration: InputDecoration(
+                          labelText: 'First Name *',
+                          border: OutlineInputBorder(),
+                        ),
+                        controller: _firstNameController,
+                        focusNode: _firstNameFocus,
                       ),
-                      controller: _firstNameController,
-                      focusNode: _firstNameFocus,
-                    ),
-                    SizedBox(height: 20),
-                    TextField(
-                      decoration: InputDecoration(
-                        labelText: 'Last Name *',
-                        border: OutlineInputBorder(),
+                      SizedBox(height: 20),
+                      TextField(
+                        decoration: InputDecoration(
+                          labelText: 'Last Name *',
+                          border: OutlineInputBorder(),
+                        ),
+                        controller: _lastNameController,
+                        focusNode: _lastNameFocus,
                       ),
-                      controller: _lastNameController,
-                      focusNode: _lastNameFocus,
-                    ),
-                    SizedBox(height: 20),
-                    AgeRangeSelector(
-                      onAgeRangeSelected: (ageRange) {
+                      SizedBox(height: 20),
+                      AgeRangeSelector(
+                        onAgeRangeSelected: (ageRange) {
+                          setState(() {
+                            _selectedAgeRange = ageRange;
+                          });
+                        },
+                      ),
+                      SizedBox(height: 20),
+                      TextField(
+                        decoration: InputDecoration(
+                          labelText: 'Address *',
+                          border: OutlineInputBorder(),
+                        ),
+                        controller: _addressController,
+                        focusNode: _addressFocus,
+                      ),
+                      SizedBox(height: 20),
+                      Cityselector(onCityselector: (city) {
                         setState(() {
-                          _selectedAgeRange = ageRange;
+                          _selectedCity = city;
                         });
-                      },
-                    ),
-                    SizedBox(height: 20),
-                    TextField(
-                      decoration: InputDecoration(
-                        labelText: 'Address *',
-                        border: OutlineInputBorder(),
-                      ),
-                      controller: _addressController,
-                      focusNode: _addressFocus,
-                    ),
-                    SizedBox(height: 20),
-                    Cityselector(onCityselector: (city) {
-                      setState(() {
-                        _selectedCity = city;
-                      });
-                    }),
-                    SizedBox(height: 20),
-                    TextField(
-                      decoration: InputDecoration(
-                        labelText: 'Phone number *',
-                        border: OutlineInputBorder(),
-                      ),
-                      controller: _phoneController,
-                      focusNode: _phoneFocus,
-                    ),
-                    SizedBox(height: 20),
-                    TextField(
-                      decoration: InputDecoration(
-                        labelText: 'Email *',
-                        border: OutlineInputBorder(),
-                      ),
-                      controller: _emailController,
-                      focusNode: _emailFocus,
-                    ),
-                    SizedBox(height: 20),
-                    TextField(
-                      decoration: InputDecoration(
-                        labelText: 'Password *',
-                        border: OutlineInputBorder(),
-                      ),
-                      controller: _passwordController,
-                      focusNode: _passwordFocus,
-                      obscureText: true,
-                    ),
-                    SizedBox(height: 20),
-                    TextField(
-                      decoration: InputDecoration(
-                        labelText: 'Repeat Password *',
-                        border: OutlineInputBorder(),
-                      ),
-                      controller: _repeatPasswordController,
-                      obscureText: true,
-                      focusNode: _rePasswordFocus,
-                    ),
-                    SizedBox(height: 20),
-                    Row(
-                      children: [
-                        Checkbox(
-                          value: _agreeToTerms,
-                          onChanged: (value) {
-                            setState(() {
-                              _agreeToTerms = value!;
-                            });
-                          },
+                      }),
+                      SizedBox(height: 20),
+                      TextField(
+                        decoration: InputDecoration(
+                          labelText: 'Phone number *',
+                          border: OutlineInputBorder(),
                         ),
-                        Text(
-                          "I Agree to ",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 16,
+                        controller: _phoneController,
+                        focusNode: _phoneFocus,
+                      ),
+                      SizedBox(height: 20),
+                      TextField(
+                        decoration: InputDecoration(
+                          labelText: 'Email *',
+                          border: OutlineInputBorder(),
+                        ),
+                        controller: _emailController,
+                        focusNode: _emailFocus,
+                      ),
+                      SizedBox(height: 20),
+                      TextField(
+                        decoration: InputDecoration(
+                          labelText: 'Password *',
+                          border: OutlineInputBorder(),
+                        ),
+                        controller: _passwordController,
+                        focusNode: _passwordFocus,
+                        obscureText: true,
+                      ),
+                      SizedBox(height: 20),
+                      TextField(
+                        decoration: InputDecoration(
+                          labelText: 'Repeat Password *',
+                          border: OutlineInputBorder(),
+                        ),
+                        controller: _repeatPasswordController,
+                        obscureText: true,
+                        focusNode: _rePasswordFocus,
+                      ),
+                      SizedBox(height: 20),
+                      Row(
+                        children: [
+                          Checkbox(
+                            value: _agreeToTerms,
+                            onChanged: (value) {
+                              setState(() {
+                                _agreeToTerms = value!;
+                              });
+                            },
                           ),
-                        ),
-                        GestureDetector(
-                          onTap: () {
-                            // Navigate to the terms and conditions screen
-                            Navigator.pushNamed(context, '/terms_conditions');
-                          },
-                          child: Text(
-                            'Terms and Conditions',
+                          Text(
+                            "I Agree to ",
+                            textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: Colors.blue,
-                              decoration: TextDecoration.underline,
                               fontSize: 16,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                          GestureDetector(
+                            onTap: () {
+                              // Navigate to the terms and conditions screen
+                              Navigator.pushNamed(context, '/terms_conditions');
+                            },
+                            child: Text(
+                              'Terms and Conditions',
+                              style: TextStyle(
+                                color: Colors.blue,
+                                decoration: TextDecoration.underline,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Stack(alignment: Alignment.center, children: [
-                  ElevatedButton(
-                    onPressed: _isLoading ? null : _performSignUp,
-                    child: Text('Register'),
-                  ),
-                  if (_isLoading)
-                    Positioned(
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                      ),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Stack(alignment: Alignment.center, children: [
+                    ElevatedButton(
+                      onPressed: _isLoading ? null : _performSignUp,
+                      child: Text('Register'),
                     ),
-                ]),
-                SizedBox(height: 10),
-                TextButton(
-                  onPressed: () {
-                    // Navigate back to the authentication screen
-                    CircularProgressIndicator();
-                    WidgetsBinding.instance!.addPostFrameCallback((_) {
-                      Navigator.pushReplacementNamed(
-                          context, '/authentication');
-                    });
-                  },
-                  child: Text(
-                    'Already have an account? Login',
-                    style: TextStyle(color: Colors.blue),
+                    if (_isLoading)
+                      Positioned(
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                        ),
+                      ),
+                  ]),
+                  SizedBox(height: 10),
+                  TextButton(
+                    onPressed: () {
+                      // Navigate back to the authentication screen
+                      CircularProgressIndicator();
+                      WidgetsBinding.instance!.addPostFrameCallback((_) {
+                        Navigator.pushReplacementNamed(
+                            context, '/authentication');
+                      });
+                    },
+                    child: Text(
+                      'Already have an account? Login',
+                      style: TextStyle(color: Colors.blue),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

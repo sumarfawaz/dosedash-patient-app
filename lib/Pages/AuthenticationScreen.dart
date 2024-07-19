@@ -67,130 +67,123 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
       appBar: AppBar(
         title: Text('Authentication'),
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // Image at the top
-          Image.asset(
-            'assets/images/logo.png',
-            width: 200,
-            height: 200,
-            fit: BoxFit.cover,
-          ),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Padding(
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Image at the top
+              Image.asset(
+                'assets/images/logo.png',
+                width: 200,
+                height: 200,
+                fit: BoxFit.cover,
+              ),
+              SizedBox(height: 20),
+              Text(
+                'Login to your Account',
+                textAlign: TextAlign.left,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              SizedBox(height: 20),
+              TextField(
+                decoration: InputDecoration(
+                  labelText: 'Email',
+                  border: OutlineInputBorder(),
+                ),
+                controller: _emailController,
+                focusNode: _emailFocus,
+              ),
+              SizedBox(height: 20),
+              TextField(
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  border: OutlineInputBorder(),
+                ),
+                obscureText: true,
+                controller: _passwordController,
+                focusNode: _passwordFocus,
+              ),
+              SizedBox(height: 20),
+              Row(
+                children: [
+                  Checkbox(
+                    value: _agreeToTerms,
+                    onChanged: (value) {
+                      setState(() {
+                        _agreeToTerms = value!;
+                      });
+                    },
+                  ),
+                  Text(
+                    "I Agree to ",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 16,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      // Navigate to the terms and conditions screen
+                      Navigator.pushNamed(context, '/terms_conditions');
+                    },
+                    child: Text(
+                      'Terms and Conditions',
+                      style: TextStyle(
+                        color: Colors.blue,
+                        decoration: TextDecoration.underline,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      'Login to your Account',
-                      textAlign: TextAlign.left,
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    SizedBox(height: 20),
-                    TextField(
-                      decoration: InputDecoration(
-                        labelText: 'Email',
-                        border: OutlineInputBorder(),
-                      ),
-                      controller: _emailController,
-                      focusNode: _emailFocus,
-                    ),
-                    SizedBox(height: 20),
-                    TextField(
-                      decoration: InputDecoration(
-                        labelText: 'Password',
-                        border: OutlineInputBorder(),
-                      ),
-                      obscureText: true,
-                      controller: _passwordController,
-                      focusNode: _passwordFocus,
-                    ),
-                    SizedBox(height: 20),
-                    Row(
+                    Stack(
+                      alignment: Alignment.center,
                       children: [
-                        Checkbox(
-                          value: _agreeToTerms,
-                          onChanged: (value) {
-                            setState(() {
-                              _agreeToTerms = value!;
-                            });
-                          },
+                        ElevatedButton(
+                          onPressed: _isLoading ? null : _performLogin,
+                          child: Text('Login'),
                         ),
-                        Text(
-                          "I Agree to ",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 16,
-                          ),
-                        ),
-                        
-                        GestureDetector(
-                          onTap: () {
-                            // Navigate to the terms and conditions screen
-                            Navigator.pushNamed(context, '/terms_conditions');
-                          },
-                          child: Text(
-                            'Terms and Conditions',
-                            style: TextStyle(
-                              color: Colors.blue,
-                              decoration: TextDecoration.underline,
-                              fontSize: 16,
+                        if (_isLoading)
+                          Positioned(
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
                             ),
                           ),
-                        ),
                       ],
+                    ),
+                    SizedBox(height: 20), // Add spacing between button and link
+                    GestureDetector(
+                      onTap: () {
+                        // Navigate to the registration screen
+                        Navigator.pushNamed(context, '/selectionscreen');
+                      },
+                      child: Container(
+                        alignment: Alignment.center,
+                        child: Text(
+                          'No Account? Click here',
+                          style: TextStyle(
+                            color: Colors.blue,
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ),
-            ),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    ElevatedButton(
-                      onPressed: _isLoading ? null : _performLogin,
-                      child: Text('Login'),
-                    ),
-                    if (_isLoading)
-                      Positioned(
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                        ),
-                      ),
-                  ],
-                ),
-                SizedBox(height: 20), // Add spacing between button and link
-                GestureDetector(
-                  onTap: () {
-                    // Navigate to the registration screen
-                    Navigator.pushNamed(context, '/selectionscreen');
-                  },
-                  child: Container(
-                    alignment: Alignment.center,
-                    child: Text(
-                      'No Account? Click here',
-                      style: TextStyle(
-                        color: Colors.blue,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
