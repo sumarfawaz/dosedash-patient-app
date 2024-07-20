@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/services.dart';
 
 class ProfileScreen extends StatefulWidget {
   @override
@@ -50,20 +51,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  bool _validateInputs() {
+    if (_firstnameController.text.isEmpty ||
+        _lastnameController.text.isEmpty ||
+        _phoneController.text.isEmpty ||
+        _addressController.text.isEmpty) {
+      return false;
+    }
+    if (_phoneController.text.length != 10) {
+      return false;
+    }
+    return true;
+  }
+
   Future<void> _updateUserData() async {
-    if (_userId != null) {
-      await FirebaseFirestore.instance.collection('users').doc(_userId).update({
-        'firstname': _firstnameController.text,
-        'lastname': _lastnameController.text,
-        'phone': _phoneController.text,
-        'address': _addressController.text,
-      });
+    if (_validateInputs()) {
+      if (_userId != null) {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(_userId)
+            .update({
+          'firstname': _firstnameController.text,
+          'lastname': _lastnameController.text,
+          'phone': _phoneController.text,
+          'address': _addressController.text,
+        });
 
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Profile updated successfully')),
+        );
+
+        Navigator.pushNamed(context, '/');
+      }
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Profile updated successfully')),
+        SnackBar(
+            content: Text(
+                'Please fill all fields and ensure the phone number is 10 digits')),
       );
-
-      Navigator.pushNamed(context, '/');
     }
   }
 
@@ -98,6 +123,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     controller: _phoneController,
                     decoration: InputDecoration(
                         labelText: 'Phone', border: OutlineInputBorder()),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(10),
+                    ],
                   ),
                   SizedBox(height: 20),
                   TextField(

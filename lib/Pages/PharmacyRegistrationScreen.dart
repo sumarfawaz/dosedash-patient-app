@@ -1,8 +1,8 @@
 import 'package:DoseDash/CustomWidgets/CitySelector.dart';
 import 'package:DoseDash/Services/AuthService.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import '../CustomWidgets/CitySelector.dart';
 
 class PharmacyRegisterScreen extends StatefulWidget {
   PharmacyRegisterScreen({Key? key}) : super(key: key);
@@ -90,6 +90,9 @@ class _PharmacyRegisterScreenState extends State<PharmacyRegisterScreen> {
       Fluttertoast.showToast(msg: "City cannot be empty");
     } else if (_phoneController.text.isEmpty) {
       Fluttertoast.showToast(msg: "Phone number cannot be empty");
+      FocusScope.of(context).requestFocus(_phoneFocus);
+    } else if (_phoneController.text.length != 10) {
+      Fluttertoast.showToast(msg: "Phone number must be exactly 10 digits");
       FocusScope.of(context).requestFocus(_phoneFocus);
     } else if (_bankNameController.text.isEmpty) {
       Fluttertoast.showToast(msg: "Bank name cannot be empty");
@@ -205,6 +208,11 @@ class _PharmacyRegisterScreenState extends State<PharmacyRegisterScreen> {
                       ),
                       controller: _phoneController,
                       focusNode: _phoneFocus,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(10),
+                      ],
                     ),
                     SizedBox(height: 20),
                     TextField(

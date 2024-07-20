@@ -60,10 +60,20 @@ class Authservice {
       }
     } on FirebaseAuthException catch (e) {
       String message = '';
-      if (e.code == 'weak-password') {
-        message = 'The password provided is too weak.';
-      } else if (e.code == 'email-already-in-use') {
-        message = 'An account already exists with that email.';
+      if (e.code == 'invalid-email') {
+        message = 'Invalid email address.';
+      } else if (e.code == 'user-not-found') {
+        message = 'No user found for that email.';
+      } else if (e.code == 'wrong-password') {
+        message = 'Wrong password provided for that user.';
+      } else if (e.code == 'user-disabled') {
+        message = 'This user has been disabled.';
+      } else if (e.code == 'too-many-requests') {
+        message = 'Too many login attempts. Please try again later.';
+      } else if (e.code == 'operation-not-allowed') {
+        message = 'Email/password accounts are not enabled.';
+      } else {
+        message = e.message ?? 'An undefined error occurred.';
       }
       Fluttertoast.showToast(
         msg: message,

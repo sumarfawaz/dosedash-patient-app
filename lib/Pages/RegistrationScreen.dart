@@ -2,6 +2,7 @@ import 'package:DoseDash/CustomWidgets/CitySelector.dart';
 import 'package:DoseDash/Pages/AuthenticationScreen.dart';
 import 'package:DoseDash/Services/AuthService.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import '../CustomWidgets/AgeRangeSelector.dart';
 
@@ -82,6 +83,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       Fluttertoast.showToast(msg: "Area cannot be empty");
     } else if (_phoneController.text.isEmpty) {
       Fluttertoast.showToast(msg: "Phone number cannot be empty");
+      FocusScope.of(context).requestFocus(_phoneFocus);
+    } else if (_phoneController.text.length != 10) {
+      Fluttertoast.showToast(msg: "Phone number must be exactly 10 digits");
       FocusScope.of(context).requestFocus(_phoneFocus);
     } else if (_emailController.text.isEmpty) {
       Fluttertoast.showToast(msg: "Email cannot be empty");
@@ -196,6 +200,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       controller: _phoneController,
                       focusNode: _phoneFocus,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(10),
+                      ],
                     ),
                     SizedBox(height: 20),
                     TextField(
