@@ -1,4 +1,9 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.dosedash">
+
+    <!-- Add internet permission here -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    
     <application
         android:label="DoseDash"
         android:name="${applicationName}"

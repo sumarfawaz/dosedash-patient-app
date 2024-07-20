@@ -44,7 +44,13 @@ class _UploadMedicineScreenState extends State<UploadMedicineScreen> {
 
       try {
         // Convert image to Base64 string
-        if (_medicineImage != null) {
+
+        if (_medicineImage == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Please upload an image of the medicine.')),
+          );
+          return;
+        } else if (_medicineImage != null) {
           await _convertImageToBase64();
         }
 

@@ -41,120 +41,125 @@ class _MedicinesScreenState extends State<MedicinesScreen> {
     await showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: Text('Update Medicine'),
-          content: Form(
-            key: _formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  TextFormField(
-                    initialValue: brandName,
-                    decoration: InputDecoration(labelText: 'Brand Name'),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter brand name';
-                      }
-                      return null;
-                    },
-                    onSaved: (value) {
-                      brandName = value!;
-                    },
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text('Update Medicine'),
+              content: Form(
+                key: _formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      TextFormField(
+                        initialValue: brandName,
+                        decoration: InputDecoration(labelText: 'Brand Name'),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter brand name';
+                          }
+                          return null;
+                        },
+                        onSaved: (value) {
+                          brandName = value!;
+                        },
+                      ),
+                      TextFormField(
+                        initialValue: medicineName,
+                        decoration: InputDecoration(labelText: 'Medicine Name'),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter medicine name';
+                          }
+                          return null;
+                        },
+                        onSaved: (value) {
+                          medicineName = value!;
+                        },
+                      ),
+                      TextFormField(
+                        initialValue: unitPrice.toString(),
+                        decoration: InputDecoration(labelText: 'Unit Price'),
+                        keyboardType: TextInputType.number,
+                        validator: (value) {
+                          if (value == null || double.tryParse(value) == null) {
+                            return 'Please enter valid unit price';
+                          }
+                          return null;
+                        },
+                        onSaved: (value) {
+                          unitPrice = double.parse(value!);
+                        },
+                      ),
+                      TextFormField(
+                        initialValue: dosage,
+                        decoration: InputDecoration(labelText: 'Dosage'),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter dosage information';
+                          }
+                          return null;
+                        },
+                        onSaved: (value) {
+                          dosage = value!;
+                        },
+                      ),
+                      CheckboxListTile(
+                        title: Text('Prescription Required'),
+                        value: prescriptionRequired,
+                        onChanged: (value) {
+                          setState(() {
+                            prescriptionRequired = value!;
+                          });
+                        },
+                      ),
+                      TextFormField(
+                        initialValue: medicineCategory,
+                        decoration:
+                            InputDecoration(labelText: 'Medicine Category'),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter medicine category';
+                          }
+                          return null;
+                        },
+                        onSaved: (value) {
+                          medicineCategory = value!;
+                        },
+                      ),
+                    ],
                   ),
-                  TextFormField(
-                    initialValue: medicineName,
-                    decoration: InputDecoration(labelText: 'Medicine Name'),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter medicine name';
-                      }
-                      return null;
-                    },
-                    onSaved: (value) {
-                      medicineName = value!;
-                    },
-                  ),
-                  TextFormField(
-                    initialValue: unitPrice.toString(),
-                    decoration: InputDecoration(labelText: 'Unit Price'),
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value == null || double.tryParse(value) == null) {
-                        return 'Please enter valid unit price';
-                      }
-                      return null;
-                    },
-                    onSaved: (value) {
-                      unitPrice = double.parse(value!);
-                    },
-                  ),
-                  TextFormField(
-                    initialValue: dosage,
-                    decoration: InputDecoration(labelText: 'Dosage'),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter dosage information';
-                      }
-                      return null;
-                    },
-                    onSaved: (value) {
-                      dosage = value!;
-                    },
-                  ),
-                  CheckboxListTile(
-                    title: Text('Prescription Required'),
-                    value: prescriptionRequired,
-                    onChanged: (value) {
-                      setState(() {
-                        prescriptionRequired = value!;
-                      });
-                    },
-                  ),
-                  TextFormField(
-                    initialValue: medicineCategory,
-                    decoration: InputDecoration(labelText: 'Medicine Category'),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter medicine category';
-                      }
-                      return null;
-                    },
-                    onSaved: (value) {
-                      medicineCategory = value!;
-                    },
-                  ),
-                ],
+                ),
               ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () async {
-                if (_formKey.currentState!.validate()) {
-                  _formKey.currentState!.save();
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    if (_formKey.currentState!.validate()) {
+                      _formKey.currentState!.save();
 
-                  await FirebaseFirestore.instance
-                      .collection('medicines')
-                      .doc(doc.id)
-                      .update({
-                    'brandName': brandName,
-                    'medicineName': medicineName,
-                    'unitPrice': unitPrice,
-                    'dosage': dosage,
-                    'prescriptionRequired': prescriptionRequired,
-                    'medicineCategory': medicineCategory,
-                  });
+                      await FirebaseFirestore.instance
+                          .collection('medicines')
+                          .doc(doc.id)
+                          .update({
+                        'brandName': brandName,
+                        'medicineName': medicineName,
+                        'unitPrice': unitPrice,
+                        'dosage': dosage,
+                        'prescriptionRequired': prescriptionRequired,
+                        'medicineCategory': medicineCategory,
+                      });
 
-                  Navigator.of(context).pop();
-                }
-              },
-              child: Text('Update'),
-            ),
-          ],
+                      Navigator.of(context).pop();
+                    }
+                  },
+                  child: Text('Update'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
