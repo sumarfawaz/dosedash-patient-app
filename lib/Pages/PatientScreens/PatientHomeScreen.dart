@@ -26,6 +26,7 @@ class _PatientHomeScreenState extends State<Patienthomescreen>
   List<Medicine> _filteredMedicines = [];
   TextEditingController _searchController = TextEditingController();
   List<Medicine> globalCart = [];
+  DateTime? _lastTap;
 
   @override
   void initState() {
@@ -78,6 +79,15 @@ class _PatientHomeScreenState extends State<Patienthomescreen>
   }
 
   void _onItemTapped(int index) {
+    if (_selectedIndex == index && index == 0) {
+      DateTime now = DateTime.now();
+      if (_lastTap != null &&
+          now.difference(_lastTap!) < Duration(seconds: 1)) {
+        Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+      }
+      _lastTap = now;
+    }
+
     setState(() {
       _selectedIndex = index;
     });
@@ -249,9 +259,15 @@ class _PatientHomeScreenState extends State<Patienthomescreen>
       ),
       body: _getSelectedScreen(),
       bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
+        items: <BottomNavigationBarItem>[
           BottomNavigationBarItem(
-            icon: Icon(Icons.home, size: 30),
+            icon: GestureDetector(
+              onDoubleTap: () {
+                Navigator.pushNamedAndRemoveUntil(
+                    context, '/', (route) => false);
+              },
+              child: Icon(Icons.home, size: 30),
+            ),
             label: 'Home',
           ),
           BottomNavigationBarItem(
