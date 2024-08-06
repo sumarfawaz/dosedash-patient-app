@@ -1,4 +1,5 @@
 import 'package:DoseDash/Models/SplashScreenModel.dart';
+import 'package:DoseDash/Pages/MapScreens/MapScreen.dart';
 import 'package:DoseDash/Pages/PasswordRecovreyScreen.dart';
 import 'package:DoseDash/Pages/PatientScreens/PatientHomeScreen.dart';
 import 'package:DoseDash/Pages/PharmacyRegistrationScreen.dart';

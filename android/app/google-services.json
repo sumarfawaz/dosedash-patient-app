@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "1002303400171",
-    "project_id": "dosedash-6b1b4",
-    "storage_bucket": "dosedash-6b1b4.appspot.com"
+    "project_number": "119828744488",
+    "project_id": "dosedash-51e62",
+    "storage_bucket": "dosedash-51e62.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1002303400171:android:91a63754312540c19cf6ae",
+        "mobilesdk_app_id": "1:119828744488:android:905e04675168563aede81d",
         "android_client_info": {
           "package_name": "com.example.ddpatient"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBUvSgVnE5Y9egV7YBsuLGAntiWa30x4xg"
+          "current_key": "AIzaSyDL9IVwnpOPoJLqUGYBBOK73cLghaTr4is"
         }
       ],
       "services": {
