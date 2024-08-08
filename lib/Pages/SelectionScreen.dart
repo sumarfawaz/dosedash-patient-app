@@ -13,26 +13,43 @@ class SelectionScreen extends StatelessWidget {
         //automaticallyImplyLeading: false,
         centerTitle: true,
       ),
-      body: Center(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+    body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            SelectionButton(
-              imagePath: 'assets/images/patient.jpg',
-              text: 'Patient',
-              onPressed: () {
-                //await Future.delayed(const Duration(seconds: 1));
-                Navigator.pushNamed(context, '/register');
-              },
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                SelectionButton(
+                  imagePath: 'assets/images/patient.jpg',
+                  text: 'Patient',
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/register');
+                  },
+                ),
+                SizedBox(width: 20), // Space between buttons
+                SelectionButton(
+                  imagePath: 'assets/images/pharmacy.jpg',
+                  text: 'Pharmacy',
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/pharmacyregister');
+                  },
+                ),
+              ],
             ),
-            SizedBox(width: 20), // Space between buttons
-            SelectionButton(
-              imagePath: 'assets/images/pharmacy.jpg',
-              text: 'Pharmacy',
-              onPressed: () {
-                // Handle pharmacy selection
-                Navigator.pushNamed(context, '/pharmacyregister');
-              },
+            SizedBox(height: 80), // Space between rows
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                SelectionButton(
+                  imagePath: 'assets/images/DeliveryPersonlogo.jpg', // Changed image path
+                  text: 'Delivery Personnel',
+                  onPressed: () {
+                    // Handle delivery person selection
+                    Navigator.pushNamed(context, '/deliveryregister'); // Added route
+                  },
+                ),
+              ],
             ),
           ],
         ),

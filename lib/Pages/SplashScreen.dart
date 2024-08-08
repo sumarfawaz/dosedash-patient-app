@@ -83,6 +83,11 @@ class _SplashScreenWidgetState extends State<SplashScreenWidget> {
                 WidgetsBinding.instance!.addPostFrameCallback((_) {
                   Navigator.pushReplacementNamed(context, '/pharmacyhome');
                 });
+              } else if (model.role == 'Deliveryperson') {
+                // Navigate to pharmacy home screen
+                WidgetsBinding.instance!.addPostFrameCallback((_) {
+                  Navigator.pushReplacementNamed(context, '/deliveryhomescreen');
+                });
               }
             } else {
               // Navigate to authentication screen

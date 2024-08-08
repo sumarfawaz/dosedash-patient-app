@@ -1,5 +1,6 @@
 import 'package:DoseDash/Models/SplashScreenModel.dart';
-import 'package:DoseDash/Pages/MapScreens/MapScreen.dart';
+import 'package:DoseDash/Pages/DeliveryPersonScreens/DeliveryhomeScreen.dart';
+import 'package:DoseDash/Pages/DeliveryRegistrationScreen.dart';
 import 'package:DoseDash/Pages/PasswordRecovreyScreen.dart';
 import 'package:DoseDash/Pages/PatientScreens/PatientHomeScreen.dart';
 import 'package:DoseDash/Pages/PharmacyRegistrationScreen.dart';
@@ -51,6 +52,9 @@ class MyApp extends StatelessWidget {
         '/pharmacyregister': (context) => PharmacyRegisterScreen(),
         '/pharmacyhome': (context) => PharmacyHomeScreen(),
         '/passwordrecovery': (context) => PasswordRecoveryScreen(),
+        '/deliveryregister': (context) => DeliveryRegistrationScreen(),
+         '/deliveryhomescreen': (context) => DeliveryHomeScreen(),
+        
         //  // Define your registration screen route
       },
     );
