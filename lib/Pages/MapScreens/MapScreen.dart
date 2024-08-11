@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_places_flutter/model/place_details.dart';
 import 'package:uuid/uuid.dart';
 import 'package:http/http.dart' as http;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -113,8 +114,7 @@ class _MapscreenState extends State<Mapscreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Maps Sample App'),
-        backgroundColor: Colors.green[700],
+        title: const Text('Location Picker'),
       ),
       body: Stack(
         children: [
@@ -136,6 +136,15 @@ class _MapscreenState extends State<Mapscreen> {
               onPlaceSelected: (LatLng location) {
                 _updateMarker(location);
               },
+            ),
+          ),
+          Positioned(
+            left: 20,
+            bottom: 100,
+            child: FloatingActionButton(
+              onPressed: _getUserLocation,
+              child: const Icon(Icons.my_location),
+              backgroundColor: Colors.blueAccent,
             ),
           ),
           Positioned(
@@ -202,7 +211,7 @@ class _GoogleMapSearchPlacesApiState extends State<GoogleMapSearchPlacesApi> {
       String baseURL =
           'https://maps.googleapis.com/maps/api/place/autocomplete/json';
       String request =
-          '$baseURL?input=$input&key=$PLACES_API_KEY&sessiontoken=$_sessionToken';
+          '$baseURL?input=$input&key=$PLACES_API_KEY&sessiontoken=$_sessionToken&language=en&components=country:LK&types=geocode';
       var response = await http.get(Uri.parse(request));
       var data = json.decode(response.body);
 
@@ -250,14 +259,23 @@ class _GoogleMapSearchPlacesApiState extends State<GoogleMapSearchPlacesApi> {
                   // Fetch place details and update marker
                   String placeId = _placeList[index]["place_id"];
                   String detailsRequest =
-                      'https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&key=Your-Google-API-Key';
+                      'https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&key=AIzaSyAxPH9a0OR1Ako_KsrRC3z6_wXOlFtfTWM';
                   var detailsResponse =
                       await http.get(Uri.parse(detailsRequest));
                   var detailsData = json.decode(detailsResponse.body);
+
                   if (detailsResponse.statusCode == 200) {
                     var location =
                         detailsData['result']['geometry']['location'];
                     LatLng latLng = LatLng(location['lat'], location['lng']);
+
+                    // Clear the search field and place list
+                    setState(() {
+                      _controller.clear();
+                      _placeList.clear();
+                    });
+
+                    // Call the callback to update the marker on the map
                     widget.onPlaceSelected(latLng);
                   }
                 },
