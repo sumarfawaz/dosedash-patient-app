@@ -1,8 +1,9 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
+import 'package:http/http.dart' as http;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:google_places_flutter/google_places_flutter.dart';
-import 'package:google_places_flutter/model/place_type.dart';
-import 'package:google_places_flutter/model/prediction.dart';
 import 'package:geolocator/geolocator.dart';
 
 class Mapscreen extends StatefulWidget {
@@ -20,7 +21,7 @@ class _MapscreenState extends State<Mapscreen> {
   Marker? _selectedMarker;
   Circle? _userLocationCircle;
   final String googleApiKey =
-      'AIzaSyCKAixG6wsvD6xYd27f6U_XHms5D8-jONk'; // Replace with your Google API Key
+      'AIzaSyAxPH9a0OR1Ako_KsrRC3z6_wXOlFtfTWM'; // Replace with your Google API Key
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -108,63 +109,6 @@ class _MapscreenState extends State<Mapscreen> {
     });
   }
 
-  Widget placesAutoCompleteTextField() {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 20),
-      child: GooglePlaceAutoCompleteTextField(
-        textEditingController: _searchController,
-        googleAPIKey: "AIzaSyCKAixG6wsvD6xYd27f6U_XHms5D8-jONk",
-        inputDecoration: InputDecoration(
-          hintText: "Search your location",
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-        ),
-        debounceTime: 400,
-        countries: ["LK"],
-        isLatLngRequired: true,
-        getPlaceDetailWithLatLng: (Prediction prediction) {
-          // Debugging: Print prediction details
-          print("getPlaceDetailWithLatLng callback triggered");
-          print(
-              "Prediction details: lat=${prediction.lat}, lng=${prediction.lng}");
-
-          // Update marker on map
-          if (prediction.lat != null && prediction.lng != null) {
-            _updateMarker(
-                LatLng(prediction.lat as double, prediction.lng as double));
-          } else {
-            print("Latitude or Longitude is null");
-          }
-        },
-        itemClick: (Prediction prediction) {
-          // Debugging: Print prediction description
-          print("itemClick callback triggered");
-          print("Prediction description: ${prediction.description}");
-
-          _searchController.text = prediction.description ?? "";
-          _searchController.selection = TextSelection.fromPosition(
-              TextPosition(offset: prediction.description?.length ?? 0));
-        },
-        itemBuilder: (context, index, Prediction prediction) {
-          return Container(
-            padding: EdgeInsets.all(10),
-            child: Row(
-              children: [
-                Icon(Icons.location_on),
-                SizedBox(width: 7),
-                Expanded(child: Text("${prediction.description ?? ""}")),
-              ],
-            ),
-          );
-        },
-        seperatedBuilder: Divider(),
-        isCrossBtnShown: true,
-        containerHorizontalPadding: 10,
-        placeType: PlaceType.geocode,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -188,7 +132,11 @@ class _MapscreenState extends State<Mapscreen> {
             top: 20,
             left: 20,
             right: 20,
-            child: placesAutoCompleteTextField(),
+            child: GoogleMapSearchPlacesApi(
+              onPlaceSelected: (LatLng location) {
+                _updateMarker(location);
+              },
+            ),
           ),
           Positioned(
             bottom: 20,
@@ -205,6 +153,122 @@ class _MapscreenState extends State<Mapscreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class GoogleMapSearchPlacesApi extends StatefulWidget {
+  final Function(LatLng) onPlaceSelected;
+
+  const GoogleMapSearchPlacesApi({Key? key, required this.onPlaceSelected})
+      : super(key: key);
+
+  @override
+  _GoogleMapSearchPlacesApiState createState() =>
+      _GoogleMapSearchPlacesApiState();
+}
+
+class _GoogleMapSearchPlacesApiState extends State<GoogleMapSearchPlacesApi> {
+  final _controller = TextEditingController();
+  var uuid = const Uuid();
+  String _sessionToken = '1234567890';
+  List<dynamic> _placeList = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_onChanged);
+  }
+
+  _onChanged() {
+    if (_controller.text.isEmpty) {
+      setState(() {
+        _placeList.clear();
+      });
+      return;
+    }
+
+    setState(() {
+      _sessionToken = uuid.v4();
+    });
+    getSuggestion(_controller.text);
+  }
+
+  void getSuggestion(String input) async {
+    const String PLACES_API_KEY =
+        "AIzaSyAxPH9a0OR1Ako_KsrRC3z6_wXOlFtfTWM"; // Use your actual Google API key
+
+    try {
+      String baseURL =
+          'https://maps.googleapis.com/maps/api/place/autocomplete/json';
+      String request =
+          '$baseURL?input=$input&key=$PLACES_API_KEY&sessiontoken=$_sessionToken';
+      var response = await http.get(Uri.parse(request));
+      var data = json.decode(response.body);
+
+      if (response.statusCode == 200) {
+        setState(() {
+          _placeList = data['predictions'];
+        });
+      } else {
+        throw Exception('Failed to load predictions');
+      }
+    } catch (e) {
+      print(e);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: <Widget>[
+        Align(
+          alignment: Alignment.topCenter,
+          child: TextField(
+            controller: _controller,
+            decoration: InputDecoration(
+              hintText: "Search your location here",
+              focusColor: Colors.white,
+              floatingLabelBehavior: FloatingLabelBehavior.never,
+              prefixIcon: const Icon(Icons.map),
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.cancel),
+                onPressed: () {
+                  _controller.clear();
+                },
+              ),
+            ),
+          ),
+        ),
+        Container(
+          height: 200, // Set a fixed height for the search results
+          child: ListView.builder(
+            itemCount: _placeList.length,
+            itemBuilder: (context, index) {
+              return GestureDetector(
+                onTap: () async {
+                  // Fetch place details and update marker
+                  String placeId = _placeList[index]["place_id"];
+                  String detailsRequest =
+                      'https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&key=Your-Google-API-Key';
+                  var detailsResponse =
+                      await http.get(Uri.parse(detailsRequest));
+                  var detailsData = json.decode(detailsResponse.body);
+                  if (detailsResponse.statusCode == 200) {
+                    var location =
+                        detailsData['result']['geometry']['location'];
+                    LatLng latLng = LatLng(location['lat'], location['lng']);
+                    widget.onPlaceSelected(latLng);
+                  }
+                },
+                child: ListTile(
+                  title: Text(_placeList[index]["description"]),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

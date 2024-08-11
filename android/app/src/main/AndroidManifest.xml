@@ -11,9 +11,7 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
-        <meta-data
-            android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyBS9N5ydSlqT1R1sCRLtfk2LbAsqbSWQqk" />
+        
 
         <activity
             android:name=".MainActivity"
@@ -40,6 +38,9 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+            <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyAxPH9a0OR1Ako_KsrRC3z6_wXOlFtfTWM" />
     </application>
 
     <!-- Required to query activities that can process text, see:
