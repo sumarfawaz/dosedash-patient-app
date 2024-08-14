@@ -1,8 +1,10 @@
 import 'dart:convert'; // Import for base64 decoding
+import 'package:DoseDash/Algorithms/GetUserLocation.dart';
 import 'package:DoseDash/Pages/PatientScreens/UploadPrescription.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../Services/AuthService.dart';
@@ -33,6 +35,7 @@ class _PatientHomeScreenState extends State<Patienthomescreen>
     super.initState();
     _fetchUserData();
     _fetchMedicines();
+    //_getUserLocation();
   }
 
   Future<void> _fetchUserData() async {
@@ -58,24 +61,97 @@ class _PatientHomeScreenState extends State<Patienthomescreen>
     }
   }
 
-  Future<void> _fetchMedicines() async {
-    QuerySnapshot querySnapshot =
-        await FirebaseFirestore.instance.collection('medicines').get();
+// //Seperate Method for fetching user location
+//   Future<void> _getUserLocation() async {
+//     LocationService locationService = LocationService();
 
-    setState(() {
-      _medicines = querySnapshot.docs.map((doc) {
-        return Medicine(
-          id: doc.id,
-          name: doc['medicineName'],
-          brand: doc['brandName'],
-          price: doc['unitPrice'],
-          pharmacyId: doc['pharmacyId'],
-          image: doc[
-              'medicineImageBase64'], // Assuming the image is stored as base64
-        );
-      }).toList();
-      _filteredMedicines = _medicines;
-    });
+//     LatLng? userLocation = await locationService.getUserLocation();
+
+//     if (userLocation != null) {
+//       _processUserLocation(userLocation);
+//     } else {
+//       // Handle the case where location could not be retrieved
+//       print('Unable to retrieve user location');
+//     }
+//   }
+
+//   void _processUserLocation(LatLng userLocation) {
+//     setState(() {
+//       print("User Location Fetched :'$userLocation'");
+//     });
+//   }
+
+  // Future<void> _fetchNearbyPharmacies() async {
+  //   LocationService locationService = LocationService();
+  //   LatLng? userLocation = await locationService.getUserLocation();
+
+  //   if (userLocation != null) {
+  //     List<DocumentSnapshot> pharmacies =
+  //         await locationService.getNearbyPharmacies(userLocation);
+
+  //     setState(() {
+  //       _medicines = pharmacies.map((doc) {
+  //         return Medicine(
+  //           id: doc.id,
+  //           name: doc['medicineName'],
+  //           brand: doc['brandName'],
+  //           price: doc['unitPrice'],
+  //           pharmacyId: doc['pharmacyId'],
+  //           image: doc['medicineImageBase64'],
+  //         );
+  //       }).toList();
+  //       _filteredMedicines = _medicines;
+  //     });
+  //   }
+  // }
+
+  // Future<void> _fetchMedicines() async {
+  //   QuerySnapshot querySnapshot =
+  //       await FirebaseFirestore.instance.collection('medicines').get();
+
+  //   setState(() {
+  //     _medicines = querySnapshot.docs.map((doc) {
+  //       return Medicine(
+  //         id: doc.id,
+  //         name: doc['medicineName'],
+  //         brand: doc['brandName'],
+  //         price: doc['unitPrice'],
+  //         pharmacyId: doc['pharmacyId'],
+  //         image: doc[
+  //             'medicineImageBase64'], // Assuming the image is stored as base64
+  //       );
+  //     }).toList();
+  //     _filteredMedicines = _medicines;
+  //   });
+  // }
+
+  Future<void> _fetchMedicines() async {
+    LocationService locationService = LocationService();
+    LatLng? userLocation = await locationService.getUserLocation();
+    print("User Location  $userLocation");
+    List<String> nearbyPharmacyUIDs =
+        await locationService.getNearbyPharmacies(userLocation!);
+
+    if (nearbyPharmacyUIDs.isNotEmpty) {
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('medicines')
+          .where('pharmacyId', whereIn: nearbyPharmacyUIDs)
+          .get();
+
+      setState(() {
+        _medicines = querySnapshot.docs.map((doc) {
+          return Medicine(
+            id: doc.id,
+            name: doc['medicineName'],
+            brand: doc['brandName'],
+            price: doc['unitPrice'],
+            pharmacyId: doc['pharmacyId'],
+            image: doc['medicineImageBase64'],
+          );
+        }).toList();
+        _filteredMedicines = _medicines;
+      });
+    }
   }
 
   void _onItemTapped(int index) {
