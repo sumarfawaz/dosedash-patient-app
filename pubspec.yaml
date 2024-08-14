@@ -45,10 +45,12 @@ dependencies:
   google_api_availability: ^5.0.0
   google_places_flutter: ^2.0.9
   geolocator: ^12.0.0
-
-dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_driver:
+    sdk: flutter
+
+dev_dependencies:
 
   auto_size_text: 3.0.0
   cached_network_image: 3.3.1
