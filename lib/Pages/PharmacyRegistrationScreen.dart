@@ -1,4 +1,5 @@
 import 'package:DoseDash/CustomWidgets/CitySelector.dart';
+import 'package:DoseDash/Pages/MapScreens/MapScreen.dart';
 import 'package:DoseDash/Services/AuthService.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -15,6 +16,7 @@ class _PharmacyRegisterScreenState extends State<PharmacyRegisterScreen> {
   final TextEditingController _licenseController = TextEditingController();
   final TextEditingController _pharmacyNameController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
+  final TextEditingController _coordinatesController = TextEditingController(); // New controller for coordinates
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _bankNameController = TextEditingController();
   final TextEditingController _bankAccountController = TextEditingController();
@@ -27,6 +29,7 @@ class _PharmacyRegisterScreenState extends State<PharmacyRegisterScreen> {
   final FocusNode _licenseFocus = FocusNode();
   final FocusNode _pharmacyNameFocus = FocusNode();
   final FocusNode _addressFocus = FocusNode();
+  final FocusNode _coordinatesFocus = FocusNode(); // New FocusNode for coordinates
   final FocusNode _phoneFocus = FocusNode();
   final FocusNode _bankNameFocus = FocusNode();
   final FocusNode _bankAccountFocus = FocusNode();
@@ -36,7 +39,6 @@ class _PharmacyRegisterScreenState extends State<PharmacyRegisterScreen> {
   final FocusNode _rePasswordFocus = FocusNode();
 
   bool _agreeToTerms = false; // State to track if user agrees to terms
-  String? _selectedCity;
   bool _isLoading = false;
 
   @override
@@ -44,6 +46,7 @@ class _PharmacyRegisterScreenState extends State<PharmacyRegisterScreen> {
     _licenseController.dispose();
     _pharmacyNameController.dispose();
     _addressController.dispose();
+    _coordinatesController.dispose(); // Dispose the new controller
     _phoneController.dispose();
     _bankNameController.dispose();
     _bankAccountController.dispose();
@@ -54,6 +57,7 @@ class _PharmacyRegisterScreenState extends State<PharmacyRegisterScreen> {
     _licenseFocus.dispose();
     _pharmacyNameFocus.dispose();
     _addressFocus.dispose();
+    _coordinatesFocus.dispose(); // Dispose the new FocusNode
     _phoneFocus.dispose();
     _bankNameFocus.dispose();
     _bankAccountFocus.dispose();
@@ -76,6 +80,34 @@ class _PharmacyRegisterScreenState extends State<PharmacyRegisterScreen> {
     });
   }
 
+  void _openMapScreen() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Mapscreen(userRole: 'pharmacy'),
+      ),
+    );
+
+    if (result != null) {
+      if (result is Map<String, dynamic>) {
+        // Handle both address and coordinates for pharmacy
+        String address = result['address'];
+        String coordinates = result['coordinates'];
+
+        // Update the address and coordinates fields
+        setState(() {
+          _addressController.text = address;
+          _coordinatesController.text = coordinates;
+        });
+      } else if (result is String) {
+        // Handle only address or coordinates
+        setState(() {
+          _addressController.text = result;
+        });
+      }
+    }
+  }
+
   void _performSignUp() async {
     if (_licenseController.text.isEmpty) {
       Fluttertoast.showToast(msg: "License number cannot be empty");
@@ -86,8 +118,6 @@ class _PharmacyRegisterScreenState extends State<PharmacyRegisterScreen> {
     } else if (_addressController.text.isEmpty) {
       Fluttertoast.showToast(msg: "Address cannot be empty");
       FocusScope.of(context).requestFocus(_addressFocus);
-    } else if (_selectedCity == null) {
-      Fluttertoast.showToast(msg: "City cannot be empty");
     } else if (_phoneController.text.isEmpty) {
       Fluttertoast.showToast(msg: "Phone number cannot be empty");
       FocusScope.of(context).requestFocus(_phoneFocus);
@@ -126,7 +156,7 @@ class _PharmacyRegisterScreenState extends State<PharmacyRegisterScreen> {
         licenseNo: _licenseController.text,
         pharmacyName: _pharmacyNameController.text,
         address: _addressController.text,
-        city: _selectedCity!,
+        coordinates: _coordinatesController.text, // Pass the coordinates 
         phone: _phoneController.text,
         bankName: _bankNameController.text,
         bankAccountNo: _bankAccountController.text,
@@ -136,7 +166,6 @@ class _PharmacyRegisterScreenState extends State<PharmacyRegisterScreen> {
       _stopLoading();
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -186,21 +215,35 @@ class _PharmacyRegisterScreenState extends State<PharmacyRegisterScreen> {
                       focusNode: _pharmacyNameFocus,
                     ),
                     SizedBox(height: 20),
+                    GestureDetector(
+                      onTap: _openMapScreen,
+                      child: TextField(
+                        decoration: InputDecoration(
+                          labelText: 'Click to Find Address *',
+                          border: OutlineInputBorder(),
+                        ),
+                        controller: _addressController,
+                        focusNode: _addressFocus,
+                        enabled: false, // Add this line to make the field not editable
+                      ),
+                    ),
+
+                    SizedBox(height: 20),
+
+                    // New TextField for Coordinates
                     TextField(
                       decoration: InputDecoration(
-                        labelText: 'Pharmacy Address *',
+                        labelText: 'Coordinates',
                         border: OutlineInputBorder(),
                       ),
-                      controller: _addressController,
-                      focusNode: _addressFocus,
-                    ),
+                      controller: _coordinatesController,
+                      enabled: false,
+                      ),
+                     
+
                     SizedBox(height: 20),
-                    Cityselector(onCityselector: (city) {
-                      setState(() {
-                        _selectedCity = city;
-                      });
-                    }),
-                    SizedBox(height: 20),
+
+                   
                     TextField(
                       decoration: InputDecoration(
                         labelText: 'Pharmacy Contact *',

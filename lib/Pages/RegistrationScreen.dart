@@ -1,10 +1,12 @@
 import 'package:DoseDash/CustomWidgets/CitySelector.dart';
 import 'package:DoseDash/Pages/AuthenticationScreen.dart';
+import 'package:DoseDash/Pages/MapScreens/MapScreen.dart';
 import 'package:DoseDash/Services/AuthService.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import '../CustomWidgets/AgeRangeSelector.dart';
+
 
 class RegisterScreen extends StatefulWidget {
   RegisterScreen({Key? key}) : super(key: key);
@@ -16,8 +18,7 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _repeatPasswordController =
-      TextEditingController();
+  final TextEditingController _repeatPasswordController =TextEditingController();
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
@@ -33,7 +34,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   bool _agreeToTerms = false; // State to track if user agrees to terms
   String? _selectedAgeRange;
-  String? _selectedCity;
+
   bool _isLoading = false; // Loading state
 
   @override
@@ -67,6 +68,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
   }
 
+  void _openMapScreen() async {
+    final selectedLocation = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Mapscreen(userRole: 'patient'),
+      ),
+    );
+    if (selectedLocation != null) {
+      setState(() {
+        _addressController.text = selectedLocation;
+      });
+    }
+  }
+
   void _performSignUp() async {
     if (_firstNameController.text.isEmpty) {
       Fluttertoast.showToast(msg: "First name cannot be empty");
@@ -79,8 +94,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     } else if (_addressController.text.isEmpty) {
       Fluttertoast.showToast(msg: "Address cannot be empty");
       FocusScope.of(context).requestFocus(_addressFocus);
-    } else if (_selectedCity == null) {
-      Fluttertoast.showToast(msg: "Area cannot be empty");
     } else if (_phoneController.text.isEmpty) {
       Fluttertoast.showToast(msg: "Phone number cannot be empty");
       FocusScope.of(context).requestFocus(_phoneFocus);
@@ -113,7 +126,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
         lastname: _lastNameController.text,
         agerange: _selectedAgeRange!,
         address: _addressController.text,
-        city: _selectedCity!,
         phone: _phoneController.text,
         context: context,
       );
@@ -151,7 +163,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         fontWeight: FontWeight.normal,
                       ),
                     ),
-                    SizedBox(height: 20),
+                    SizedBox(height: 20), // Add a comma at the end of the line
                     TextField(
                       decoration: InputDecoration(
                         labelText: 'First Name *',
@@ -178,21 +190,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       },
                     ),
                     SizedBox(height: 20),
-                    TextField(
+
+
+
+                    GestureDetector(
+                      onTap: _openMapScreen,
+                      child: TextField(
                       decoration: InputDecoration(
-                        labelText: 'Address *',
+                        labelText: 'Click to Find Address *',
                         border: OutlineInputBorder(),
                       ),
                       controller: _addressController,
                       focusNode: _addressFocus,
+                      enabled: false, // Add this line to make the field not editable
+                      ),
                     ),
+
+                  
+
                     SizedBox(height: 20),
-                    Cityselector(onCityselector: (city) {
-                      setState(() {
-                        _selectedCity = city;
-                      });
-                    }),
-                    SizedBox(height: 20),
+
+                   
                     TextField(
                       decoration: InputDecoration(
                         labelText: 'Phone number *',

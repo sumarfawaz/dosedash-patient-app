@@ -6,9 +6,14 @@ import 'package:uuid/uuid.dart';
 import 'package:http/http.dart' as http;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
+
 
 class Mapscreen extends StatefulWidget {
-  const Mapscreen({super.key});
+  
+   final String userRole; // Add userRole parameter
+  const Mapscreen({super.key, required this.userRole}); // Update constructor
+
 
   @override
   State<Mapscreen> createState() => _MapscreenState();
@@ -50,9 +55,47 @@ class _MapscreenState extends State<Mapscreen> {
     mapController.animateCamera(CameraUpdate.newLatLng(location));
   }
 
-  void _onDone() {
-    if (_selectedLocation != null) {
-      print(_selectedLocation.toString());
+  void _onDone() async {
+  if (_selectedLocation != null) {
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        _selectedLocation!.latitude,
+        _selectedLocation!.longitude,
+      );
+
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks[0];
+
+     
+        
+        String address = [
+          place.name,
+          place.street,
+          place.locality,
+          place.subAdministrativeArea,
+          place.administrativeArea,
+          place.postalCode,
+          place.country
+        ].where((element) => element != null && element.isNotEmpty).join(', ');
+
+    
+
+       if (widget.userRole == 'pharmacy') {
+            String coordinates = "${_selectedLocation!.latitude}, ${_selectedLocation!.longitude}";
+            Navigator.pop(context, {'address': address, 'coordinates': coordinates});
+          } else {
+            if (address.isNotEmpty) {
+              Navigator.pop(context, address);
+            } else {
+              Navigator.pop(context, "${_selectedLocation!.latitude}, ${_selectedLocation!.longitude}");
+            }
+          }
+        } else {
+          Navigator.pop(context, "${_selectedLocation!.latitude}, ${_selectedLocation!.longitude}");
+        }
+      } catch (e) {
+        Navigator.pop(context, "${_selectedLocation!.latitude}, ${_selectedLocation!.longitude}");
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -61,6 +104,10 @@ class _MapscreenState extends State<Mapscreen> {
       );
     }
   }
+
+
+
+
 
   Future<void> _getUserLocation() async {
     bool serviceEnabled;

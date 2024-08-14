@@ -1,5 +1,6 @@
 import 'package:DoseDash/CustomWidgets/AgeRangeSelector.dart';
 import 'package:DoseDash/CustomWidgets/CitySelector.dart';
+import 'package:DoseDash/Pages/MapScreens/MapScreen.dart';
 import 'package:DoseDash/Services/AuthService.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -52,7 +53,6 @@ class _DeliveryRegistrationScreen extends State<DeliveryRegistrationScreen> {
 
 
   bool _agreeToTerms = false; // State to track if user agrees to terms
-  String? _selectedCity; // State to track selected city
   bool _isLoading = false; // State to track loading state
   String? _selectedAgeRange2; // Selected age range
 
@@ -108,6 +108,23 @@ class _DeliveryRegistrationScreen extends State<DeliveryRegistrationScreen> {
     });
   }
 
+
+void _openMapScreen() async {
+    final selectedLocation = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Mapscreen(userRole: 'delivery_person'),
+      ),
+    );
+    if (selectedLocation != null) {
+      setState(() {
+        _addressController.text = selectedLocation;
+      });
+    }
+  }
+
+
+
   // Method to perform sign up
   void _performSignUp() async {
     // Validating input fields
@@ -125,8 +142,6 @@ class _DeliveryRegistrationScreen extends State<DeliveryRegistrationScreen> {
     } else if (_phoneController.text.isEmpty) {
       Fluttertoast.showToast(msg: "Phone number cannot be empty");
       FocusScope.of(context).requestFocus(_phoneFocus);
-    } else if (_selectedCity == null) {
-      Fluttertoast.showToast(msg: "City cannot be empty");
     } else if (_VnumController.text.isEmpty) {
       Fluttertoast.showToast(msg: "Vehicle number cannot be empty");
       FocusScope.of(context).requestFocus(_VnumFocus);
@@ -173,7 +188,7 @@ class _DeliveryRegistrationScreen extends State<DeliveryRegistrationScreen> {
       vehicleNumber:_VnumController.text,
       NICnumber:_NICNumController.text,
       LicenseID: _LicIDController.text,
-      city: _selectedCity!,
+     
       bankName: _bankNameController.text,
       bankAccountNo: _bankAccountController.text,
       bankBranch: _bankBranchController.text,
@@ -261,14 +276,19 @@ class _DeliveryRegistrationScreen extends State<DeliveryRegistrationScreen> {
                             SizedBox(height: 20),
 
                             
-                             TextField(
-                              decoration: InputDecoration(
-                                labelText: 'Address *',
-                                border: OutlineInputBorder(),
-                              ),
-                                  controller: _addressController,
-                                  focusNode: _addressFocus,             
-                            ),
+                             GestureDetector(
+                      onTap: _openMapScreen,
+                      child: TextField(
+                      decoration: InputDecoration(
+                        labelText: 'Click to Find Address *',
+                        border: OutlineInputBorder(),
+                      ),
+                      controller: _addressController,
+                      focusNode: _addressFocus,
+                      enabled: false, // Add this line to make the field not editable
+                      ),
+                    ),
+
                             
                               SizedBox(height: 20),
                             
@@ -328,15 +348,8 @@ class _DeliveryRegistrationScreen extends State<DeliveryRegistrationScreen> {
                                     LengthLimitingTextInputFormatter(12),
                               ],           
                             ),
-                                
-                                SizedBox(height: 20),
-
-                             Cityselector(onCityselector: (city) {
-                                setState(() {
-                                 _selectedCity = city; // Updating selected city state
-                              });
-                             }),
-                            
+                              
+                             
                              SizedBox(height: 20),
 
                              TextField(

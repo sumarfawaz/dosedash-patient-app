@@ -45,7 +45,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (context) => SplashScreenWidget(),
         '/authentication': (context) =>
-            Mapscreen(), // Define your authentication screen route
+            AuthenticationScreen(), // Define your authentication screen route
         '/register': (context) => RegisterScreen(),
         '/patienthome': (context) => Patienthomescreen(),
         '/terms_conditions': (context) => TermsConditionsScreen(),

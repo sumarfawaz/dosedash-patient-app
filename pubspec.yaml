@@ -45,6 +45,12 @@ dependencies:
   google_api_availability: ^5.0.0
   google_places_flutter: ^2.0.9
   geolocator: ^12.0.0
+<<<<<<< HEAD
+=======
+  geocoding: ^2.0.4
+
+dev_dependencies:
+>>>>>>> a018ccd371acca4cf70111cb191a9f5c774e451b
   flutter_test:
     sdk: flutter
   flutter_driver:
