@@ -50,6 +50,7 @@ dependencies:
   flutter_driver:
     sdk: flutter
   geocoding: ^3.0.0
+  flutter_stripe: ^11.0.0
 
 dev_dependencies:
 

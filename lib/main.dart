@@ -15,11 +15,16 @@ import 'package:provider/provider.dart';
 import './Pages/SplashScreen.dart';
 import './Pages/AuthenticationScreen.dart'; // Import your authentication screen
 import 'Pages/RegistrationScreen.dart';
+import 'package:flutter_stripe/flutter_stripe.dart'; // Import Stripe
+
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Initialize Stripe with your publishable key
+  Stripe.publishableKey = 'pk_test_51PnzGOENPvFTECCdSCFkRSbSWOTNiiU7zkjB2uBNESFhVdd1hQDr2guKZuaMVMAVzEXtuVe3KTyuYVOHKSl1kEZa004o3o0kla'; // Replace with your Stripe Publishable Key
 
   runApp(
     ChangeNotifierProvider(
@@ -28,6 +33,7 @@ Future<void> main() async {
     ),
   );
 }
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

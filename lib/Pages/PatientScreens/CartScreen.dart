@@ -1,3 +1,4 @@
+import 'package:DoseDash/Services/stripe_service.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -22,12 +23,13 @@ class _CartScreenState extends State<CartScreen> {
   void initState() {
     super.initState();
     _calculateTotalPrice();
+    _fetchUserData();
   }
 
   void _calculateTotalPrice() {
-    _totalPrice = widget.globalCart
-        .fold(0.0, (sum, item) => sum + (item.price * item.quantity));
+    _totalPrice = widget.globalCart.fold(0.0, (sum, item) => sum + (item.price * item.quantity));
   }
+
 
   Future<void> _fetchUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -38,17 +40,12 @@ class _CartScreenState extends State<CartScreen> {
       _user = FirebaseAuth.instance.currentUser;
 
       if (_user != null) {
-        DocumentSnapshot userDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(userId)
-            .get();
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
 
         setState(() {
           _userData = userDoc.data() as Map<String, dynamic>?;
 
-          // Ensure _userData is not null and contains necessary fields
           if (_userData != null) {
-            // Optionally handle defaults if fields are missing
             _userData!['firstname'] ??= '';
             _userData!['lastname'] ??= '';
             _userData!['phone'] ??= '';
@@ -60,82 +57,34 @@ class _CartScreenState extends State<CartScreen> {
     }
   }
 
-  // void _placeOrder() async {
-  //   SharedPreferences prefs = await SharedPreferences.getInstance();
-  //   String? userId = prefs.getString('userid');
+ 
 
-  //   if (userId != null) {
-  //     // Ensure _userData is fetched before proceeding
-  //     if (_userData == null) {
-  //       await _fetchUserData(); // Fetch user data if not already fetched
-  //     }
+Future<void> _handlePayment() async {
+    try {
+      // Convert total price to cents (Stripe expects amounts in cents)
+      int amount = (_totalPrice * 100).toInt();
 
-  //     // Check again if _userData is now available
-  //     if (_userData != null) {
-  //       // Prepare the order data
-  //       List<Map<String, dynamic>> orderItems = widget.globalCart
-  //           .map((medicine) => {
-  //                 'medicineId': medicine.id,
-  //                 'name': medicine.name,
-  //                 'brand': medicine.brand,
-  //                 'price': medicine.price,
-  //                 'quantity': medicine.quantity,
-  //                 'pharmacyId':
-  //                     medicine.pharmacyId, // Access pharmacyId from medicine
-  //               })
-  //           .toList();
+      // Initialize the payment sheet
+      await StripeService.initPaymentSheet(context, amount.toString(), 'LKR');
 
-  //       // Add the order to Firestore
-  //       await FirebaseFirestore.instance.collection('orders').add({
-  //         'userId': userId,
-  //         'pharmacyId': orderItems.isNotEmpty
-  //             ? orderItems.first['pharmacyId']
-  //             : '', // Use the first medicine's pharmacyId as an example
-  //         'user_name': '${_userData!['firstname']} ${_userData!['lastname']}',
-  //         'phone_number': _userData!['phone'] ?? '',
-  //         'orderItems': orderItems,
-  //         'orderStatus': 'on progress', // Set initial order status
-  //         'timestamp':
-  //             FieldValue.serverTimestamp(), // Timestamp when order is placed
-  //       });
+      // On successful payment, place the order
+      _placeOrder();
+    } catch (e) {
+      print('Payment failed: $e');
+    }
+  }
 
-  //       // Show success message or navigate back
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(content: Text('Order placed successfully')),
-  //       );
 
-  //       // Clear the cart after placing the order
-  //       setState(() {
-  //         widget.globalCart.clear();
-  //         _totalPrice = 0.0;
-  //       });
-
-  //       // Optionally, navigate to a success or confirmation screen
-  //       // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => OrderConfirmationScreen()));
-  //     } else {
-  //       // Handle case where _userData is still null
-  //       print('User data not available. Cannot place order.');
-  //       // Optionally show a message or retry fetching user data
-  //     }
-  //   } else {
-  //     print('User ID not available. Cannot place order.');
-  //     // Handle case where userId is null (should ideally not happen if logged in)
-  //   }
-  // }
-
-  void _placeOrder() async {
+   void _placeOrder() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? userId = prefs.getString('userid');
 
     if (userId != null) {
-      // Ensure _userData is fetched before proceeding
       if (_userData == null) {
-        await _fetchUserData(); // Fetch user data if not already fetched
+        await _fetchUserData();
       }
 
-      // Check again if _userData is now available
       if (_userData != null) {
-        // Group medicines by pharmacyId
         Map<String, List<Map<String, dynamic>>> groupedOrderItems = {};
         for (var medicine in widget.globalCart) {
           var orderItem = {
@@ -147,14 +96,12 @@ class _CartScreenState extends State<CartScreen> {
             'pharmacyId': medicine.pharmacyId,
           };
 
-          // Add the order item to the respective pharmacy group
           if (!groupedOrderItems.containsKey(medicine.pharmacyId)) {
             groupedOrderItems[medicine.pharmacyId] = [];
           }
           groupedOrderItems[medicine.pharmacyId]!.add(orderItem);
         }
 
-        // Place orders for each pharmacy
         for (var entry in groupedOrderItems.entries) {
           String pharmacyId = entry.key;
           List<Map<String, dynamic>> orderItems = entry.value;
@@ -165,35 +112,28 @@ class _CartScreenState extends State<CartScreen> {
             'user_name': '${_userData!['firstname']} ${_userData!['lastname']}',
             'phone_number': _userData!['phone'] ?? '',
             'orderItems': orderItems,
-            'orderStatus': 'on progress', // Set initial order status
-            'timestamp':
-                FieldValue.serverTimestamp(), // Timestamp when order is placed
+            'orderStatus': 'on progress',
+            'timestamp': FieldValue.serverTimestamp(),
           });
         }
 
-        // Show success message or navigate back
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Order placed successfully')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Order placed successfully')));
 
-        // Clear the cart after placing the order
         setState(() {
           widget.globalCart.clear();
           _totalPrice = 0.0;
         });
 
-        // Optionally, navigate to a success or confirmation screen
-        // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => OrderConfirmationScreen()));
       } else {
-        // Handle case where _userData is still null
         print('User data not available. Cannot place order.');
-        // Optionally show a message or retry fetching user data
       }
     } else {
       print('User ID not available. Cannot place order.');
-      // Handle case where userId is null (should ideally not happen if logged in)
     }
   }
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -235,6 +175,7 @@ class _CartScreenState extends State<CartScreen> {
                     },
                   ),
           ),
+
           if (widget.globalCart.isNotEmpty)
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -248,7 +189,7 @@ class _CartScreenState extends State<CartScreen> {
                   ),
                   SizedBox(height: 20),
                   ElevatedButton(
-                    onPressed: _placeOrder,
+                    onPressed:  _handlePayment,
                     child: Text('Place Order'),
                   ),
                 ],
