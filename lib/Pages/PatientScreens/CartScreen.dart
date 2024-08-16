@@ -1,7 +1,9 @@
+import 'package:DoseDash/Algorithms/GetUserLocation.dart';
 import 'package:DoseDash/Services/stripe_service.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:DoseDash/Pages/PatientScreens/PatientHomeScreen.dart';
 
@@ -76,15 +78,29 @@ Future<void> _handlePayment() async {
 
 
    void _placeOrder() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? userId = prefs.getString('userid');
+  // Retrieve user ID from SharedPreferences
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  String? userId = prefs.getString('userid');
 
-    if (userId != null) {
-      if (_userData == null) {
-        await _fetchUserData();
-      }
+  // Check if user ID is available
+  if (userId != null) {
+    // Fetch user data if not already available
+    if (_userData == null) {
+      await _fetchUserData();
+    }
 
-      if (_userData != null) {
+    // Proceed if user data is available
+    if (_userData != null) {
+      // Get the user's current location
+      LocationService locationService = LocationService();
+      LatLng? userLocation = await locationService.getUserLocation();
+
+      // Proceed if user location is successfully retrieved
+      if (userLocation != null) {
+        // Fetch delivery persons within a 15 km radius of the user's location
+        List<String> nearbyDeliveryPersons = await locationService.getNearbyDeliveryPersons(userLocation);
+
+        // Group the order items by pharmacy
         Map<String, List<Map<String, dynamic>>> groupedOrderItems = {};
         for (var medicine in widget.globalCart) {
           var orderItem = {
@@ -96,16 +112,19 @@ Future<void> _handlePayment() async {
             'pharmacyId': medicine.pharmacyId,
           };
 
+          // Add order item to the corresponding pharmacy's list
           if (!groupedOrderItems.containsKey(medicine.pharmacyId)) {
             groupedOrderItems[medicine.pharmacyId] = [];
           }
           groupedOrderItems[medicine.pharmacyId]!.add(orderItem);
         }
 
+        // Add the order to Firestore and notify delivery persons
         for (var entry in groupedOrderItems.entries) {
           String pharmacyId = entry.key;
           List<Map<String, dynamic>> orderItems = entry.value;
 
+          // Add the order to Firestore
           await FirebaseFirestore.instance.collection('orders').add({
             'userId': userId,
             'pharmacyId': pharmacyId,
@@ -115,22 +134,44 @@ Future<void> _handlePayment() async {
             'orderStatus': 'on progress',
             'timestamp': FieldValue.serverTimestamp(),
           });
+
+          // Notify delivery persons within the 15 km radius
+          try {
+            for (String deliveryPersonId in nearbyDeliveryPersons) {
+              await FirebaseFirestore.instance.collection('notifications').add({
+                'deliveryPersonId': deliveryPersonId,
+                'userId': userId,
+                'orderItems': orderItems,
+                'orderStatus': 'pending',
+                'timestamp': FieldValue.serverTimestamp(),
+                'notificationType': 'order',
+              });
+              print('Notification sent to delivery person: $deliveryPersonId');
+            }
+          } catch (e) {
+            print('Error adding notification: $e');
+          }
         }
 
+        // Show a success message and clear the cart
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Order placed successfully')));
 
         setState(() {
           widget.globalCart.clear();
           _totalPrice = 0.0;
         });
-
       } else {
-        print('User data not available. Cannot place order.');
+        print('Unable to get user location.');
       }
     } else {
-      print('User ID not available. Cannot place order.');
+      print('User data not available. Cannot place order.');
     }
+  } else {
+    print('User ID not available. Cannot place order.');
   }
+}
+
+        
 
 
 

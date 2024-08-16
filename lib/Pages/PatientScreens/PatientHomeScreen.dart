@@ -61,69 +61,7 @@ class _PatientHomeScreenState extends State<Patienthomescreen>
     }
   }
 
-// //Seperate Method for fetching user location
-//   Future<void> _getUserLocation() async {
-//     LocationService locationService = LocationService();
 
-//     LatLng? userLocation = await locationService.getUserLocation();
-
-//     if (userLocation != null) {
-//       _processUserLocation(userLocation);
-//     } else {
-//       // Handle the case where location could not be retrieved
-//       print('Unable to retrieve user location');
-//     }
-//   }
-
-//   void _processUserLocation(LatLng userLocation) {
-//     setState(() {
-//       print("User Location Fetched :'$userLocation'");
-//     });
-//   }
-
-  // Future<void> _fetchNearbyPharmacies() async {
-  //   LocationService locationService = LocationService();
-  //   LatLng? userLocation = await locationService.getUserLocation();
-
-  //   if (userLocation != null) {
-  //     List<DocumentSnapshot> pharmacies =
-  //         await locationService.getNearbyPharmacies(userLocation);
-
-  //     setState(() {
-  //       _medicines = pharmacies.map((doc) {
-  //         return Medicine(
-  //           id: doc.id,
-  //           name: doc['medicineName'],
-  //           brand: doc['brandName'],
-  //           price: doc['unitPrice'],
-  //           pharmacyId: doc['pharmacyId'],
-  //           image: doc['medicineImageBase64'],
-  //         );
-  //       }).toList();
-  //       _filteredMedicines = _medicines;
-  //     });
-  //   }
-  // }
-
-  // Future<void> _fetchMedicines() async {
-  //   QuerySnapshot querySnapshot =
-  //       await FirebaseFirestore.instance.collection('medicines').get();
-
-  //   setState(() {
-  //     _medicines = querySnapshot.docs.map((doc) {
-  //       return Medicine(
-  //         id: doc.id,
-  //         name: doc['medicineName'],
-  //         brand: doc['brandName'],
-  //         price: doc['unitPrice'],
-  //         pharmacyId: doc['pharmacyId'],
-  //         image: doc[
-  //             'medicineImageBase64'], // Assuming the image is stored as base64
-  //       );
-  //     }).toList();
-  //     _filteredMedicines = _medicines;
-  //   });
-  // }
 
   Future<void> _fetchMedicines() async {
     LocationService locationService = LocationService();

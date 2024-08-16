@@ -1,16 +1,16 @@
+import 'dart:async';
+
+import 'package:DoseDash/Algorithms/GetUserLocation.dart';
 import 'package:DoseDash/Pages/DeliveryPersonScreens/DeliveriesScreen.dart';
 import 'package:DoseDash/Pages/DeliveryPersonScreens/DeliveryProfileScreen.dart';
-import 'package:DoseDash/Pages/PatientScreens/ProfileScreen.dart';
-import 'package:DoseDash/Pages/PharmacyScreens/MedicinesScreen.dart';
-import 'package:DoseDash/Pages/PharmacyScreens/OrderScreen.dart';
-import 'package:DoseDash/Pages/PharmacyScreens/UploadMedicines.dart';
-import 'package:DoseDash/Services/AuthService.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:DoseDash/Services/AuthService.dart';
 
-// Define the DeliveryHomeScreen widget as a stateful widget to maintain state
 class DeliveryHomeScreen extends StatefulWidget {
   const DeliveryHomeScreen({Key? key}) : super(key: key);
 
@@ -18,126 +18,145 @@ class DeliveryHomeScreen extends StatefulWidget {
   _DeliveryHomeScreenState createState() => _DeliveryHomeScreenState();
 }
 
-// Define the state for PharmacyHomeScreen
 class _DeliveryHomeScreenState extends State<DeliveryHomeScreen> {
-  User? _user; // Firebase user object to hold the authenticated user
-  Map<String, dynamic>? _deliveryData; // Holds delivery person data fetched from Firestore
-  int _selectedIndex = 0; // Index of the selected item in the bottom navigation bar
- 
-  int _completedOrders = 0; // Number of completed orders
+  User? _user;
+  Map<String, dynamic>? _deliveryData;
+  int _selectedIndex = 0;
+  int _completedOrders = 0;
+  LatLng? _liveLocation; // To store the live location
 
+  StreamSubscription<Position>? _positionStreamSubscription;
 
-  // Initialize the state
-  @override
+@override
   void initState() {
     super.initState();
-    _fetchDeliveryPersonData(); // Fetch pharmacy data when the screen is initialized
+    _fetchDeliveryPersonData();
+    _startLocationUpdates(); // Start location updates when screen is initialized
   }
 
-  // Fetch pharmacy data from Firestore and update the state
+  @override
+  void dispose() {
+    _positionStreamSubscription?.cancel(); // Cancel the subscription when the widget is disposed
+    super.dispose();
+  }
+
+
   Future<void> _fetchDeliveryPersonData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? authToken = prefs.getString('auth_token'); // Get the auth token from shared preferences
-    String? userId = prefs.getString('userid'); // Get the user ID from shared preferences
+    String? authToken = prefs.getString('auth_token');
+    String? userId = prefs.getString('userid');
 
     if (authToken != null) {
-      _user = FirebaseAuth.instance.currentUser; // Get the current Firebase user
+      _user = FirebaseAuth.instance.currentUser;
 
       if (_user != null) {
-        // Fetch pharmacy document from Firestore using the user ID
         DocumentSnapshot deliveryDoc = await FirebaseFirestore.instance
             .collection('DeliveryPersons')
             .doc(userId)
             .get();
 
-        // Fetch all orders from Firestore
-        //QuerySnapshot ordersSnapshot =
-           // await FirebaseFirestore.instance.collection('orders').get();
-
-
-       
-
-
-        // Update the state with fetched data
         setState(() {
-          _deliveryData = deliveryDoc.data() as Map<String, dynamic>?; // Store deliveryperson data
-          
+          _deliveryData = deliveryDoc.data() as Map<String, dynamic>?;
         });
       }
     } else {
-      print("Auth token is not available."); // Print a message if auth token is not available
+      print("Auth token is not available.");
     }
   }
 
-  // Update the selected index when a bottom navigation item is tapped
+// Update location in Firestore
+  Future<void> _updateLiveLocation() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString('userid');
+
+    if (userId != null && _liveLocation != null) {
+      await FirebaseFirestore.instance.collection('DeliveryPersons').doc(userId).update({
+        'geolocation': '${_liveLocation!.latitude},${_liveLocation!.longitude}',
+        'lastUpdated': FieldValue.serverTimestamp(), // Optional: Track when location was last updated
+      });
+    }
+  }
+
+ // Method to start listening for continuous location updates
+void _startLocationUpdates() {
+  Position? _lastPosition;
+  _positionStreamSubscription = Geolocator.getPositionStream().listen((Position position) {
+    if (_lastPosition != null && Geolocator.distanceBetween(_lastPosition!.latitude, _lastPosition!.longitude, position.latitude, position.longitude) < 5) {
+      return;
+    }
+    _lastPosition = position;
+    setState(() {
+      _liveLocation = LatLng(position.latitude, position.longitude);
+    });
+    _updateLiveLocation(); // Update Firestore with the latest location
+  });
+}
+
+
+
+
   void _onItemTapped(int index) {
     setState(() {
-      _selectedIndex = index; // Update the selected index
+      _selectedIndex = index;
     });
   }
 
-  // Build the list of screens for bottom navigation
   List<Widget> _buildScreens() {
     return [
-      _buildDashboard(), // Dashboard screen
-      _buildDeliveriesScreen(), // Orders screen
-      _buildprofileScreen(), // Medicines screen
-      
+      _buildDashboard(),
+      _buildDeliveriesScreen(),
+      _buildProfileScreen(),
     ];
   }
 
-//----------------------------------------------------------------------------------------------------------------------
-
-
-
-  // Build the dashboard screen with pharmacy details
   Widget _buildDashboard() {
     return _deliveryData == null
-        ? Center(child: CircularProgressIndicator()) // Show a loading indicator if data is not yet fetched
+        ? Center(child: CircularProgressIndicator())
         : SingleChildScrollView(
             child: Padding(
-              padding: const EdgeInsets.all(16.0), // Add padding to the dashboard
+              padding: const EdgeInsets.all(16.0),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start, // Align content to the start
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Welcome, ${_deliveryData!['First Name']} ${_deliveryData!['Last Name']}!' , // Display delivery person name
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold), // Style the text
+                    'Welcome, ${_deliveryData!['First Name']} ${_deliveryData!['Last Name']}!',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
-                  SizedBox(height: 20), // Add space below the text
-                  // GridView to display pharmacy information in cards
+                  SizedBox(height: 20),
                   GridView.count(
-                    shrinkWrap: true, // Let the grid view take up only necessary space
-                    physics: NeverScrollableScrollPhysics(), // Disable scrolling for the grid view
-                    crossAxisCount: 2, // Display two columns
-                    crossAxisSpacing: 10, // Add space between columns
-                    mainAxisSpacing: 10, // Add space between rows
+                    shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(),
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
                     children: [
                       _buildInfoCard(
-                        title: 'License ID', // Display license ID
+                        title: 'License ID',
                         value: _deliveryData!['License ID'] ?? 'N/A',
                       ),
                       _buildInfoCard(
-                        title: 'City', // Display city
+                        title: 'City',
                         value: _deliveryData!['city'] ?? 'N/A',
                       ),
                       _buildInfoCard(
-                        title: 'Contact', // Display contact number
+                        title: 'Contact',
                         value: _deliveryData!['phone Number'] ?? 'N/A',
                       ),
+                     
                       _buildInfoCard(
-                        title: 'Address', // Display Address
-                        value: _deliveryData!['Address'] ?? 'N/A',
-                      ),
-                       _buildInfoCard(
-                        title: 'Vehicle number', // Display vehicle number
+                        title: 'Vehicle number',
                         value: _deliveryData!['vehicle Number'] ?? 'N/A',
                       ),
                       _buildInfoCard(
-                        title: 'Completed Orders', // Display completed orders count
+                        title: 'Completed Orders',
                         value: _completedOrders.toString(),
                       ),
-                      
+                      _buildInfoCard(
+                        title: 'Live Location',
+                        value: _liveLocation != null
+                            ? '${_liveLocation!.latitude}, ${_liveLocation!.longitude}'
+                            : 'Location not available',
+                      ),
                     ],
                   ),
                 ],
@@ -146,40 +165,39 @@ class _DeliveryHomeScreenState extends State<DeliveryHomeScreen> {
           );
   }
 
-  // Build a card widget to display pharmacy information
   Widget _buildInfoCard({required String title, required dynamic value}) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white, // Set background color to white
-        borderRadius: BorderRadius.circular(8), // Round the corners
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
-            color: Colors.black12, // Set shadow color
-            blurRadius: 6, // Blur effect
-            offset: Offset(0, 2), // Offset the shadow
+            color: Colors.black12,
+            blurRadius: 6,
+            offset: Offset(0, 2),
           ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0), // Add padding inside the card
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center, // Center the content vertically
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              title, // Display the title
+              title,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Colors.grey[700], // Set text color
+                color: Colors.grey[700],
               ),
             ),
-            SizedBox(height: 10), // Add space below the title
+            SizedBox(height: 10),
             Text(
-              value.toString(), // Display the value
+              value.toString(),
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Colors.black, // Set text color
+                color: Colors.black,
               ),
             ),
           ],
@@ -188,84 +206,72 @@ class _DeliveryHomeScreenState extends State<DeliveryHomeScreen> {
     );
   }
 
-  // Build the orders screen
   Widget _buildDeliveriesScreen() {
-    return DeliveriesScreen(); // Return the Deliveries Screen
+    return DeliveriesScreen();
   }
 
-  // Build the medicines screen
-  Widget _buildprofileScreen() {
-    return ProfileScreen2(); // Return the Profilescreen
+  Widget _buildProfileScreen() {
+    return ProfileScreen2();
   }
-
- 
-
-
-
-
-
-//----------------------------------------------------------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('DoseDash Pharmacy'), // Set the title of the app bar
-        automaticallyImplyLeading: false, // Don't show the back button
-        backgroundColor: Colors.greenAccent, // Set the background color
+        title: Text('DoseDash Delivery'),
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.greenAccent,
         actions: [
           IconButton(
-            icon: Icon(Icons.account_circle), // Set the profile icon
-            iconSize: 35, // Set the icon size
+            icon: Icon(Icons.account_circle),
+            iconSize: 35,
             onPressed: () {
-              _setProfilePicture(context); // Show the logout dialog when tapped
+              _setProfilePicture(context);
             },
           ),
         ],
       ),
-      body: _buildScreens().elementAt(_selectedIndex), // Display the selected screen
+      body: _buildScreens().elementAt(_selectedIndex),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
-            icon: Icon(Icons.home), // Home icon
-            label: 'Home', // Home label
+            icon: Icon(Icons.home),
+            label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.delivery_dining_sharp), // Orders icon
-            label: 'Deliveries', // Orders label
+            icon: Icon(Icons.delivery_dining_sharp),
+            label: 'Deliveries',
           ),
-        
           BottomNavigationBarItem(
-              icon: Icon(Icons.person), // Upload icon
-              label: 'Profile', // Upload label
+              icon: Icon(Icons.person),
+              label: 'Profile',
               backgroundColor: Colors.white),
         ],
-        currentIndex: _selectedIndex, // Set the current selected index
-        selectedItemColor: Colors.greenAccent, // Color for the selected item
-        unselectedItemColor: Colors.blueGrey, // Color for unselected items
-        selectedLabelStyle: TextStyle(fontSize: 12), // Style for the selected label
-        unselectedLabelStyle: TextStyle(fontSize: 12), // Style for unselected labels
-        showUnselectedLabels: true, // Show labels for unselected items
-        onTap: _onItemTapped, // Update the index when an item is tapped
-        iconSize: 30, // Set the icon size
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.greenAccent,
+        unselectedItemColor: Colors.blueGrey,
+        selectedLabelStyle: TextStyle(fontSize: 12),
+        unselectedLabelStyle: TextStyle(fontSize: 12),
+        showUnselectedLabels: true,
+        onTap: _onItemTapped,
+        iconSize: 30,
       ),
     );
   }
 
-  // Show dialog to confirm logout
   void _setProfilePicture(BuildContext context) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Logout'), // Title of the dialog
-          content: Text('Logout from your Delivery System?'), // Message of the dialog
+          title: Text('Logout'),
+          content: Text('Logout from your Delivery System?'),
           actions: [
             TextButton(
               onPressed: () async {
-                await Authservice().signout(context: context); // Call signout function on "Yes"
+                await Authservice().signout(context: context);
               },
-              child: Text('Yes'), // Text for the button
+              child: Text('Yes'),
             ),
           ],
         );
@@ -273,4 +279,3 @@ class _DeliveryHomeScreenState extends State<DeliveryHomeScreen> {
     );
   }
 }
- 
