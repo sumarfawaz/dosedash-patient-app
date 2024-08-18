@@ -1,5 +1,5 @@
 import 'package:DoseDash/CustomWidgets/AgeRangeSelector.dart';
-import 'package:DoseDash/CustomWidgets/CitySelector.dart';
+
 import 'package:DoseDash/Pages/MapScreens/MapScreen.dart';
 import 'package:DoseDash/Services/AuthService.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -110,18 +110,18 @@ class _DeliveryRegistrationScreen extends State<DeliveryRegistrationScreen> {
 
 
 void _openMapScreen() async {
-    final selectedLocation = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => Mapscreen(userRole: 'delivery_person'),
-      ),
-    );
-    if (selectedLocation != null) {
-      setState(() {
-        _addressController.text = selectedLocation;
-      });
-    }
+  final selectedLocation = await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => Mapscreen(userRole: 'delivery_person'),
+    ),
+  );
+  if (selectedLocation != null && mounted) {
+    setState(() {
+      _addressController.text = selectedLocation;
+    });
   }
+}
 
 
 
@@ -178,7 +178,9 @@ void _openMapScreen() async {
     } else if (!_agreeToTerms) {
       Fluttertoast.showToast(msg: "Please agree to terms and conditions");
     } else {
+      if (mounted) {
       _startLoading(); // Starting loading
+        }
       await Authservice().signupDeliveryPerson( // Calling signupDeliveryPerson method of Authservice
       context: context, 
       deliverypersonFName:_fnameController.text,
@@ -197,7 +199,9 @@ void _openMapScreen() async {
       agerange: _selectedAgeRange2!,
   
       );
+       if (mounted) {
       _stopLoading(); // Stopping loading
+       }
     }
   }
   

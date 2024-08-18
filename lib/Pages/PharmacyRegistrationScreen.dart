@@ -1,4 +1,4 @@
-import 'package:DoseDash/CustomWidgets/CitySelector.dart';
+
 import 'package:DoseDash/Pages/MapScreens/MapScreen.dart';
 import 'package:DoseDash/Services/AuthService.dart';
 import 'package:flutter/material.dart';
