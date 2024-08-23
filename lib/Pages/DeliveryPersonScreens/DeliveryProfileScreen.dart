@@ -1,3 +1,4 @@
+import 'package:DoseDash/Pages/MapScreens/MapScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -61,6 +62,36 @@ class _ProfileScreen2State extends State<ProfileScreen2> {
     }
   }
 
+
+Future<void> _updateUserAddress(String newAddress) async {
+    if (_userId != null) {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(_userId)
+          .update({
+        'address': newAddress,
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Address updated successfully')),
+      );
+    }
+  }
+
+  void _openMapScreen() async {
+    final selectedLocation = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Mapscreen(userRole: 'patient'),
+      ),
+    );
+    if (selectedLocation != null) {
+      setState(() {
+        _addressController.text = selectedLocation;
+      });
+      _updateUserAddress(selectedLocation); // Call method to update Firestore
+    }
+  }
   // Validate the input fields
   bool _validateInputs() {
     if (_fnameController.text.isEmpty ||
@@ -74,6 +105,8 @@ class _ProfileScreen2State extends State<ProfileScreen2> {
     }
     return true; // Return true if all validations pass
   }
+
+
 
   // Update user data in Firestore
   Future<void> _updateUserData() async {
@@ -146,11 +179,21 @@ class _ProfileScreen2State extends State<ProfileScreen2> {
                     ],
                   ),
                   SizedBox(height: 20), // Add space below the phone text field
-                  TextField(
-                    controller: _addressController, // Controller for address
-                    decoration: InputDecoration(
-                        labelText: 'Address', border: OutlineInputBorder()), // Decoration for address field
+
+
+                  GestureDetector(
+                    onTap: _openMapScreen,
+                    child: TextField(
+                      decoration: InputDecoration(
+                        labelText: 'Click to Find Address *',
+                        border: OutlineInputBorder(),
+                      ),
+                      controller: _addressController,
+                      enabled: false, // Makes the field not editable directly by the user
+                    ),
                   ),
+
+
                   SizedBox(height: 20), // Add space below the address text field
                   
                   // Email field (disabled)
@@ -173,14 +216,7 @@ class _ProfileScreen2State extends State<ProfileScreen2> {
                   ),
                   SizedBox(height: 20), // Add space below the age range field
                   
-                  // City field (disabled)
-                  TextField(
-                    controller: TextEditingController(text: _userData?['city']), // Set city value
-                    decoration: InputDecoration(
-                        labelText: 'City', border: OutlineInputBorder()), // Decoration for city field
-                    enabled: false, // Disable editing
-                  ),
-                  SizedBox(height: 20), // Add space below the city field
+               
                   
                   // Update profile button
                   ElevatedButton(

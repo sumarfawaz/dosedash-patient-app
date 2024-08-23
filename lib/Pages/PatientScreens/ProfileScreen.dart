@@ -1,3 +1,4 @@
+import 'package:DoseDash/Pages/MapScreens/MapScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -51,6 +52,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _updateUserAddress(String newAddress) async {
+    if (_userId != null) {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(_userId)
+          .update({
+        'address': newAddress,
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Address updated successfully')),
+      );
+    }
+  }
+
+  void _openMapScreen() async {
+    final selectedLocation = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Mapscreen(userRole: 'patient'),
+      ),
+    );
+    if (selectedLocation != null) {
+      setState(() {
+        _addressController.text = selectedLocation;
+      });
+      _updateUserAddress(selectedLocation); // Call method to update Firestore
+    }
+  }
+
   bool _validateInputs() {
     if (_firstnameController.text.isEmpty ||
         _lastnameController.text.isEmpty ||
@@ -86,8 +117,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text(
-                'Please fill all fields and ensure the phone number is 10 digits')),
+          content: Text(
+            'Please fill all fields and ensure the phone number is 10 digits',
+          ),
+        ),
       );
     }
   }
@@ -110,19 +143,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   TextField(
                     controller: _firstnameController,
                     decoration: InputDecoration(
-                        labelText: 'First Name', border: OutlineInputBorder()),
+                      labelText: 'First Name',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
                   SizedBox(height: 20),
                   TextField(
                     controller: _lastnameController,
                     decoration: InputDecoration(
-                        labelText: 'Last Name', border: OutlineInputBorder()),
+                      labelText: 'Last Name',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
                   SizedBox(height: 20),
                   TextField(
                     controller: _phoneController,
                     decoration: InputDecoration(
-                        labelText: 'Phone', border: OutlineInputBorder()),
+                      labelText: 'Phone',
+                      border: OutlineInputBorder(),
+                    ),
                     keyboardType: TextInputType.number,
                     inputFormatters: [
                       FilteringTextInputFormatter.digitsOnly,
@@ -130,34 +169,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ],
                   ),
                   SizedBox(height: 20),
-                  TextField(
-                    controller: _addressController,
-                    decoration: InputDecoration(
-                        labelText: 'Address', border: OutlineInputBorder()),
+
+
+
+                  GestureDetector(
+                    onTap: _openMapScreen,
+                    child: TextField(
+                      decoration: InputDecoration(
+                        labelText: 'Click to Find Address *',
+                        border: OutlineInputBorder(),
+                      ),
+                      controller: _addressController,
+                      enabled: false, // Makes the field not editable directly by the user
+                    ),
                   ),
+
+                  
                   SizedBox(height: 20),
                   TextField(
-                    controller:
-                        TextEditingController(text: _userData?['email']),
+                    controller: TextEditingController(text: _userData?['email']),
                     decoration: InputDecoration(
-                        labelText: 'Email', border: OutlineInputBorder()),
+                      labelText: 'Email',
+                      border: OutlineInputBorder(),
+                    ),
                     enabled: false,
                   ),
                   SizedBox(height: 20),
                   TextField(
-                    controller:
-                        TextEditingController(text: _userData?['agerange']),
+                    controller: TextEditingController(text: _userData?['agerange']),
                     decoration: InputDecoration(
-                        labelText: 'Age Range', border: OutlineInputBorder()),
+                      labelText: 'Age Range',
+                      border: OutlineInputBorder(),
+                    ),
                     enabled: false,
                   ),
-                  SizedBox(height: 20),
-                  TextField(
-                    controller: TextEditingController(text: _userData?['city']),
-                    decoration: InputDecoration(
-                        labelText: 'City', border: OutlineInputBorder()),
-                    enabled: false,
-                  ),
+                  
                   SizedBox(height: 20),
                   ElevatedButton(
                     onPressed: _updateUserData,
