@@ -1,11 +1,11 @@
 import 'dart:async';
-
-import 'package:DoseDash/Algorithms/GetUserLocation.dart';
 import 'package:DoseDash/Pages/DeliveryPersonScreens/DeliveriesScreen.dart';
 import 'package:DoseDash/Pages/DeliveryPersonScreens/DeliveryProfileScreen.dart';
+import 'package:DoseDash/Services/NotificationService.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
@@ -23,23 +23,40 @@ class _DeliveryHomeScreenState extends State<DeliveryHomeScreen> {
   Map<String, dynamic>? _deliveryData;
   int _selectedIndex = 0;
   int _completedOrders = 0;
-  LatLng? _liveLocation; // To store the live location
-
+  LatLng? _liveLocation;
   StreamSubscription<Position>? _positionStreamSubscription;
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
 
-@override
+  NotificationService notificationService = NotificationService();
+
+  @override
   void initState() {
     super.initState();
     _fetchDeliveryPersonData();
-    _startLocationUpdates(); // Start location updates when screen is initialized
+    _startLocationUpdates();
+    // _initializeNotifications();
+    // _pushNotifications();
+
+    //notificationService.init();
+    //notificationService.pushNotifications();
+    _notification();
   }
 
   @override
   void dispose() {
-    _positionStreamSubscription?.cancel(); // Cancel the subscription when the widget is disposed
+    _positionStreamSubscription?.cancel();
+    notificationService.cancelAllNotifications();
     super.dispose();
   }
 
+  Future<void> _notification() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? authToken = prefs.getString('auth_token');
+    String? userId = prefs.getString('userid');
+    notificationService.init();
+    notificationService.pushNotifications(userId);
+  }
 
   Future<void> _fetchDeliveryPersonData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -64,36 +81,88 @@ class _DeliveryHomeScreenState extends State<DeliveryHomeScreen> {
     }
   }
 
-// Update location in Firestore
   Future<void> _updateLiveLocation() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? userId = prefs.getString('userid');
 
     if (userId != null && _liveLocation != null) {
-      await FirebaseFirestore.instance.collection('DeliveryPersons').doc(userId).update({
+      await FirebaseFirestore.instance
+          .collection('DeliveryPersons')
+          .doc(userId)
+          .update({
         'geolocation': '${_liveLocation!.latitude},${_liveLocation!.longitude}',
-        'lastUpdated': FieldValue.serverTimestamp(), // Optional: Track when location was last updated
+        'lastUpdated': FieldValue.serverTimestamp(),
       });
     }
   }
 
- // Method to start listening for continuous location updates
-void _startLocationUpdates() {
-  Position? _lastPosition;
-  _positionStreamSubscription = Geolocator.getPositionStream().listen((Position position) {
-    if (_lastPosition != null && Geolocator.distanceBetween(_lastPosition!.latitude, _lastPosition!.longitude, position.latitude, position.longitude) < 5) {
-      return;
-    }
-    _lastPosition = position;
-    setState(() {
-      _liveLocation = LatLng(position.latitude, position.longitude);
+  // Future<void> _pushNotifications() async {
+  //   FirebaseFirestore.instance
+  //       .collection('orders')
+  //       .where('orderStatus', isEqualTo: 'readyforpickup')
+  //       .snapshots()
+  //       .listen((QuerySnapshot snapshot) {
+  //     for (var doc in snapshot.docs) {
+  //       var orderData = doc.data();
+  //       showLocalNotification(orderData);
+  //     }
+  //   });
+  // }
+
+  // void _initializeNotifications() {
+  //   const AndroidInitializationSettings initializationSettingsAndroid =
+  //       AndroidInitializationSettings('ic_launcher');
+
+  //   const InitializationSettings initializationSettings =
+  //       InitializationSettings(android: initializationSettingsAndroid);
+
+  //   flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  // }
+
+  // void showLocalNotification(orderData) async {
+  //   const AndroidNotificationDetails androidPlatformChannelSpecifics =
+  //       AndroidNotificationDetails(
+  //     'DoseDash_channel',
+  //     'DoseDash Delivery',
+  //     channelDescription: 'Order Notification',
+  //     icon:
+  //         "ic_launcher", // Make sure this icon exists in your res/mipmap folder
+  //     importance: Importance.max,
+  //     priority: Priority.high,
+  //   );
+
+  //   const NotificationDetails platformChannelSpecifics =
+  //       NotificationDetails(android: androidPlatformChannelSpecifics);
+
+  //   await flutterLocalNotificationsPlugin.show(
+  //     0,
+  //     'Order Ready for Pickup',
+  //     'Order is ready for pickup.',
+  //     platformChannelSpecifics,
+  //     payload: 'item x',
+  //   );
+  // }
+
+  void _startLocationUpdates() {
+    Position? _lastPosition;
+    _positionStreamSubscription =
+        Geolocator.getPositionStream().listen((Position position) {
+      if (_lastPosition != null &&
+          Geolocator.distanceBetween(
+                  _lastPosition!.latitude,
+                  _lastPosition!.longitude,
+                  position.latitude,
+                  position.longitude) <
+              5) {
+        return;
+      }
+      _lastPosition = position;
+      setState(() {
+        _liveLocation = LatLng(position.latitude, position.longitude);
+      });
+      _updateLiveLocation();
     });
-    _updateLiveLocation(); // Update Firestore with the latest location
-  });
-}
-
-
-
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -142,7 +211,6 @@ void _startLocationUpdates() {
                         title: 'Contact',
                         value: _deliveryData!['phone Number'] ?? 'N/A',
                       ),
-                     
                       _buildInfoCard(
                         title: 'Vehicle number',
                         value: _deliveryData!['vehicle Number'] ?? 'N/A',
@@ -269,7 +337,7 @@ void _startLocationUpdates() {
           actions: [
             TextButton(
               onPressed: () async {
-                await Authservice().signout(context: context);
+                _logout(context);
               },
               child: Text('Yes'),
             ),
@@ -277,5 +345,18 @@ void _startLocationUpdates() {
         );
       },
     );
+  }
+
+  Future<void> _logout(BuildContext context) async {
+    // Cancel any background tasks (location, notification)
+    _positionStreamSubscription?.cancel(); // Cancel location stream
+
+    // If you have any notification subscriptions, stop them here as well
+    notificationService
+        .cancelAllNotifications(); // Cancel any active notifications
+
+    notificationService.cancelFirestoreListener();
+
+    await Authservice().signout(context: context); // Perform the logout
   }
 }

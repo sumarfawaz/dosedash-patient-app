@@ -3,6 +3,7 @@ import 'package:DoseDash/Pages/AuthenticationScreen.dart';
 import 'package:DoseDash/Pages/DeliveryPersonScreens/DeliveryhomeScreen.dart';
 import 'package:DoseDash/Pages/PatientScreens/PatientHomeScreen.dart';
 import 'package:DoseDash/Pages/PharmacyScreens/PharmacyHomeScreen.dart';
+import 'package:DoseDash/Services/NotificationService.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -14,8 +15,6 @@ class Authservice {
   // Initialize Firebase Authentication and Firestore instances
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
-
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -33,12 +32,12 @@ class Authservice {
     try {
       // Create a new user with email and password
       UserCredential userCredential = await _auth
-         .createUserWithEmailAndPassword(email: email, password: password);
+          .createUserWithEmailAndPassword(email: email, password: password);
 
       // Retrieve the current user
       User? user = userCredential.user;
 
-      if (user!= null) {
+      if (user != null) {
         // Get the ID token
         String? token = await user.getIdToken();
 
@@ -81,7 +80,7 @@ class Authservice {
       } else if (e.code == 'operation-not-allowed') {
         message = 'Email/password accounts are not enabled.';
       } else {
-        message = e.message?? 'An undefined error occurred.';
+        message = e.message ?? 'An undefined error occurred.';
       }
       Fluttertoast.showToast(
         msg: message,
@@ -106,8 +105,6 @@ class Authservice {
 
 //----------------------------------------------------------------------------------------------------------------------
 
-
-
   // Signup function for pharmacies
   Future<void> signupPharmacy({
     required String email,
@@ -125,11 +122,11 @@ class Authservice {
     try {
       // Create a new user with email and password
       UserCredential userCredential = await _auth
-         .createUserWithEmailAndPassword(email: email, password: password);
+          .createUserWithEmailAndPassword(email: email, password: password);
 
       User? user = userCredential.user;
 
-      if (user!= null) {
+      if (user != null) {
         // Storing pharmacy information in Firestore
         await _firestore.collection('pharmacies').doc(user.uid).set({
           'licenseNo': licenseNo,
@@ -163,7 +160,7 @@ class Authservice {
 
   // Signup function for delivery personnel
 
-    Future<void> signupDeliveryPerson({
+  Future<void> signupDeliveryPerson({
     required String deliverypersonFName,
     required String deliverypersonLName,
     required String deliveryPersonAddress,
@@ -177,17 +174,16 @@ class Authservice {
     required String email,
     required String password,
     required String agerange,
-
     required BuildContext context,
   }) async {
     try {
       // Create a new user with email and password
       UserCredential userCredential = await _auth
-         .createUserWithEmailAndPassword(email: email, password: password);
+          .createUserWithEmailAndPassword(email: email, password: password);
 
       User? user = userCredential.user;
 
-      if (user!= null) {
+      if (user != null) {
         // Storing pharmacy information in Firestore
         await _firestore.collection('DeliveryPersons').doc(user.uid).set({
           'First Name': deliverypersonFName,
@@ -220,151 +216,147 @@ class Authservice {
     }
   }
 
-
-
 //---------------------------------------------------------------------------------------------------------------------------
 
+  // Signin function
+  Future<void> signin({
+    required String email,
+    required String password,
+    required BuildContext context,
+  }) async {
+    try {
+      // Sign in with email and password
+      await _auth.signInWithEmailAndPassword(email: email, password: password);
 
- // Signin function
-Future<void> signin({
-  required String email,
-  required String password,
-  required BuildContext context,
-}) async {
-  try {
-    // Sign in with email and password
-    await _auth.signInWithEmailAndPassword(email: email, password: password);
+      // Retrieve the current user
+      User? user = _auth.currentUser;
 
-    // Retrieve the current user
-    User? user = _auth.currentUser;
+      if (user != null) {
+        // Get the ID token
+        String? token = await user.getIdToken();
 
-    if (user != null) {
-      // Get the ID token
-      String? token = await user.getIdToken();
+        // Check the users collection first
+        DocumentSnapshot userDoc =
+            await _firestore.collection('users').doc(user.uid).get();
 
-      // Check the users collection first
-      DocumentSnapshot userDoc =
-          await _firestore.collection('users').doc(user.uid).get();
-
-      if (userDoc.exists) {
-        // User found in users collection
-        String role = userDoc['role'];
-        String userid = userDoc['uid'];
-
-        // Save the token locally
-        await saveToken(token!, role, userid);
-
-        // Navigate to the appropriate screen based on the role
-        if (role == 'patient') {
-          // Navigate to patient home screen
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-                builder: (BuildContext context) => Patienthomescreen()),
-          );
-        }
-      } else {
-        // If not found in users, check the pharmacies collection
-        DocumentSnapshot pharmacyDoc =
-            await _firestore.collection('pharmacies').doc(user.uid).get();
-
-        if (pharmacyDoc.exists) {
-          // User found in pharmacies collection
-          String role = pharmacyDoc['role'];
-          String userid = pharmacyDoc['uid'];
+        if (userDoc.exists) {
+          // User found in users collection
+          String role = userDoc['role'];
+          String userid = userDoc['uid'];
 
           // Save the token locally
           await saveToken(token!, role, userid);
 
-          // Navigate to the pharmacy home screen if role is pharmacy
-          if (role == 'pharmacy') {
-            // Navigate to pharmacy home screen
+          // Navigate to the appropriate screen based on the role
+          if (role == 'patient') {
+            // Navigate to patient home screen
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                  builder: (BuildContext context) => PharmacyHomeScreen()),
+                  builder: (BuildContext context) => Patienthomescreen()),
             );
           }
         } else {
-          // If not found in pharmacies, check the delivery persons collection
-          DocumentSnapshot deliveryPersonDoc =
-              await _firestore.collection('DeliveryPersons').doc(user.uid).get();
+          // If not found in users, check the pharmacies collection
+          DocumentSnapshot pharmacyDoc =
+              await _firestore.collection('pharmacies').doc(user.uid).get();
 
-          if (deliveryPersonDoc.exists) {
-            // User found in delivery persons collection
-            String role = deliveryPersonDoc['role'];
-            String userid = deliveryPersonDoc['uid'];
+          if (pharmacyDoc.exists) {
+            // User found in pharmacies collection
+            String role = pharmacyDoc['role'];
+            String userid = pharmacyDoc['uid'];
 
             // Save the token locally
             await saveToken(token!, role, userid);
 
-            // Navigate to the delivery person home screen if role is delivery person
-            if (role == 'Deliveryperson') {
-              // Navigate to delivery person home screen
+            // Navigate to the pharmacy home screen if role is pharmacy
+            if (role == 'pharmacy') {
+              // Navigate to pharmacy home screen
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                    builder: (BuildContext context) => DeliveryHomeScreen()),
+                    builder: (BuildContext context) => PharmacyHomeScreen()),
               );
             }
           } else {
-            // User data not found in any collection
-            Fluttertoast.showToast(
-              msg: 'User data not found.',
-              toastLength: Toast.LENGTH_LONG,
-              gravity: ToastGravity.SNACKBAR,
-              backgroundColor: Colors.black54,
-              textColor: Colors.white,
-              fontSize: 14.0,
-            );
+            // If not found in pharmacies, check the delivery persons collection
+            DocumentSnapshot deliveryPersonDoc = await _firestore
+                .collection('DeliveryPersons')
+                .doc(user.uid)
+                .get();
+
+            if (deliveryPersonDoc.exists) {
+              // User found in delivery persons collection
+              String role = deliveryPersonDoc['role'];
+              String userid = deliveryPersonDoc['uid'];
+
+              // Save the token locally
+              await saveToken(token!, role, userid);
+
+              // Navigate to the delivery person home screen if role is delivery person
+              if (role == 'Deliveryperson') {
+                // Navigate to delivery person home screen
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                      builder: (BuildContext context) => DeliveryHomeScreen()),
+                );
+              }
+            } else {
+              // User data not found in any collection
+              Fluttertoast.showToast(
+                msg: 'User data not found.',
+                toastLength: Toast.LENGTH_LONG,
+                gravity: ToastGravity.SNACKBAR,
+                backgroundColor: Colors.black54,
+                textColor: Colors.white,
+                fontSize: 14.0,
+              );
+            }
           }
         }
       }
+    } on FirebaseAuthException catch (e) {
+      // Handle Firebase Authentication exceptions
+      String message = '';
+      if (e.code == 'invalid-email') {
+        message = 'Invalid email address.';
+      } else if (e.code == 'user-not-found') {
+        message = 'No user found for that email.';
+      } else if (e.code == 'wrong-password') {
+        message = 'Wrong password provided for that user.';
+      } else if (e.code == 'user-disabled') {
+        message = 'This user has been disabled.';
+      } else if (e.code == 'too-many-requests') {
+        message = 'Too many login attempts. Please try again later.';
+      } else if (e.code == 'operation-not-allowed') {
+        message = 'Email/password accounts are not enabled.';
+      } else {
+        message = e.message ?? 'An undefined error occurred.';
+      }
+      Fluttertoast.showToast(
+        msg: message,
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.SNACKBAR,
+        backgroundColor: Colors.black54,
+        textColor: Colors.white,
+        fontSize: 14.0,
+      );
+    } catch (e) {
+      // Handle general exceptions
+      print('Error: $e');
+      Fluttertoast.showToast(
+        msg: 'An error occurred. Please try again.',
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.SNACKBAR,
+        backgroundColor: Colors.black54,
+        textColor: Colors.white,
+        fontSize: 14.0,
+      );
     }
-  } on FirebaseAuthException catch (e) {
-    // Handle Firebase Authentication exceptions
-    String message = '';
-    if (e.code == 'invalid-email') {
-      message = 'Invalid email address.';
-    } else if (e.code == 'user-not-found') {
-      message = 'No user found for that email.';
-    } else if (e.code == 'wrong-password') {
-      message = 'Wrong password provided for that user.';
-    } else if (e.code == 'user-disabled') {
-      message = 'This user has been disabled.';
-    } else if (e.code == 'too-many-requests') {
-      message = 'Too many login attempts. Please try again later.';
-    } else if (e.code == 'operation-not-allowed') {
-      message = 'Email/password accounts are not enabled.';
-    } else {
-      message = e.message ?? 'An undefined error occurred.';
-    }
-    Fluttertoast.showToast(
-      msg: message,
-      toastLength: Toast.LENGTH_LONG,
-      gravity: ToastGravity.SNACKBAR,
-      backgroundColor: Colors.black54,
-      textColor: Colors.white,
-      fontSize: 14.0,
-    );
-  } catch (e) {
-    // Handle general exceptions
-    print('Error: $e');
-    Fluttertoast.showToast(
-      msg: 'An error occurred. Please try again.',
-      toastLength: Toast.LENGTH_LONG,
-      gravity: ToastGravity.SNACKBAR,
-      backgroundColor: Colors.black54,
-      textColor: Colors.white,
-      fontSize: 14.0,
-    );
   }
-}
-
 
 //----------------------------------------------------------------------------------------------------------------------
-
-
 
   // Recover password function
   Future<void> recoverPassword({
@@ -416,12 +408,12 @@ Future<void> signin({
     }
   }
 
-
 //----------------------------------------------------------------------------------------------------------------------
-
 
   // Signout function
   Future<void> signout({required BuildContext context}) async {
+    NotificationService notificationService = NotificationService();
+    notificationService.cancelAllNotifications();
     await _auth.signOut();
     clearToken();
     await Future.delayed(const Duration(seconds: 1));
@@ -431,7 +423,6 @@ Future<void> signin({
             builder: (BuildContext context) => AuthenticationScreen()));
   }
 //----------------------------------------------------------------------------------------------------------------------
-
 
   // Save token function
   Future<void> saveToken(String token, String role, String userID) async {
