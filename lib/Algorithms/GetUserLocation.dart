@@ -42,47 +42,50 @@ class LocationService {
     return userLocation;
   }
 
-  Future<List<String>> getNearbyDeliveryPersons(LatLng userLocation) async {
-    const double radiusInKm = 15; // Radius in kilometers
-    final double lat = userLocation.latitude;
-    final double lng = userLocation.longitude;
 
-    // Fetch all documents from the 'DeliveryPersons' collection
-    QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-        .collection('DeliveryPersons')
-        .where('active', isEqualTo: 'online')
-        .get();
 
-    List<String> nearbyDeliveryPersons = querySnapshot.docs
-        .map((doc) {
-          var data = doc.data() as Map<String, dynamic>?;
-          if (data != null && data.containsKey('geolocation')) {
-            // Extract geolocation data
-            String coordinatesString = data['geolocation'] as String;
-            List<String> parts = coordinatesString.split(',');
 
-            if (parts.length == 2) {
-              double deliveryPersonLat = double.parse(parts[0].trim());
-              double deliveryPersonLng = double.parse(parts[1].trim());
+ Future<List<String>> getNearbyDeliveryPersons(LatLng userLocation) async {
+  const double radiusInKm = 15; // Radius in kilometers
+  final double lat = userLocation.latitude;
+  final double lng = userLocation.longitude;
 
-              // Calculate distance between the patient and the delivery person
-              double distance = _calculateDistance(
-                  lat, lng, deliveryPersonLat, deliveryPersonLng);
+  // Fetch all documents from the 'DeliveryPersons' collection
+  QuerySnapshot querySnapshot = await FirebaseFirestore.instance.collection('DeliveryPersons').get();
 
-              // Check if the distance is within the specified radius
-              if (distance <= radiusInKm) {
-                return doc.id; // Return the delivery person ID
-              }
+  List<String> nearbyDeliveryPersons = querySnapshot.docs
+      .map((doc) {
+        var data = doc.data() as Map<String, dynamic>?;
+        if (data != null && data.containsKey('geolocation')) {
+          // Extract geolocation data
+          String coordinatesString = data['geolocation'] as String;
+          List<String> parts = coordinatesString.split(',');
+
+          if (parts.length == 2) {
+            double deliveryPersonLat = double.parse(parts[0].trim());
+            double deliveryPersonLng = double.parse(parts[1].trim());
+
+            // Calculate distance between the patient and the delivery person
+            double distance = _calculateDistance(lat, lng, deliveryPersonLat, deliveryPersonLng);
+
+            // Check if the distance is within the specified radius
+            if (distance <= radiusInKm) {
+              return doc.id; // Return the delivery person ID
             }
           }
-          return null; // Return null if data is missing or not within radius
-        })
-        .whereType<String>() // Filter out null values
-        .toList(); // Convert to list
+        }
+        return null; // Return null if data is missing or not within radius
+      })
+      .whereType<String>() // Filter out null values
+      .toList(); // Convert to list
 
-    print("Delivery persons close to user location: $nearbyDeliveryPersons");
-    return nearbyDeliveryPersons;
-  }
+  print("Delivery persons close to user location: $nearbyDeliveryPersons");
+  return nearbyDeliveryPersons;
+}
+
+
+
+
 
   // Method to fetch pharmacies within a radius of 15 km
   Future<List<String>> getNearbyPharmacies(LatLng userLocation) async {
