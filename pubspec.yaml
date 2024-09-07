@@ -56,6 +56,8 @@ dependencies:
 
   firebase_messaging: ^15.1.0
   flutter_local_notifications: ^17.2.2
+  hexcolor: ^3.0.1
+  flutter_svg: ^2.0.10+1
 
 
 dev_dependencies:

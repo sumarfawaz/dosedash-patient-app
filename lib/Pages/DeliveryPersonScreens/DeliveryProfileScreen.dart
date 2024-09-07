@@ -33,48 +33,48 @@ class _ProfileScreen2State extends State<ProfileScreen2> {
   // Fetch user ID from shared preferences
   Future<void> _fetchUserId() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    _userId =
-        prefs.getString('userid'); // Get the user ID from shared preferences
+    _userId = prefs.getString('userid'); // Get the user ID from shared preferences
     if (_userId != null) {
       _fetchUserData(); // Fetch user data if user ID is available
     }
   }
 
+  // Fetch user data from Firestore
   Future<void> _fetchUserData() async {
     if (_userId != null) {
+      // Fetch user document from Firestore using the user ID
       DocumentSnapshot userDoc = await FirebaseFirestore.instance
           .collection('DeliveryPersons')
           .doc(_userId)
           .get();
 
-      if (mounted) {
-        // Only call setState if the widget is still mounted
-        setState(() {
-          _userData = userDoc.data() as Map<String, dynamic>?;
-          if (_userData != null) {
-            _fnameController.text = _userData!['First Name'] ?? '';
-            _lnameController.text = _userData!['Last Name'] ?? '';
-            _phoneController.text = _userData!['phone Number'] ?? '';
-            _addressController.text = _userData!['Address'] ?? '';
-          }
-          _isLoading = false;
-        });
-      }
+      // Update the state with fetched data
+      setState(() {
+        _userData = userDoc.data() as Map<String, dynamic>?; // Store user data
+        if (_userData != null) {
+          _fnameController.text = _userData!['First Name'] ?? ''; // Set first name
+          _lnameController.text = _userData!['Last Name'] ?? ''; // Set last name
+          _phoneController.text = _userData!['phone Number'] ?? ''; // Set phone number
+          _addressController.text = _userData!['Address'] ?? ''; // Set address
+        }
+        _isLoading = false; // Set loading state to false
+      });
     }
   }
 
-  Future<void> _updateUserAddress(String newAddress) async {
+
+Future<void> _updateUserAddress(String newAddress) async {
     if (_userId != null) {
-      await FirebaseFirestore.instance.collection('users').doc(_userId).update({
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(_userId)
+          .update({
         'address': newAddress,
       });
 
-      if (mounted) {
-        // Only show SnackBar if the widget is still mounted
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Address updated successfully')),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Address updated successfully')),
+      );
     }
   }
 
@@ -92,7 +92,6 @@ class _ProfileScreen2State extends State<ProfileScreen2> {
       _updateUserAddress(selectedLocation); // Call method to update Firestore
     }
   }
-
   // Validate the input fields
   bool _validateInputs() {
     if (_fnameController.text.isEmpty ||
@@ -106,6 +105,8 @@ class _ProfileScreen2State extends State<ProfileScreen2> {
     }
     return true; // Return true if all validations pass
   }
+
+
 
   // Update user data in Firestore
   Future<void> _updateUserData() async {
@@ -149,48 +150,36 @@ class _ProfileScreen2State extends State<ProfileScreen2> {
         centerTitle: true, // Center the title
       ),
       body: _isLoading
-          ? Center(
-              child:
-                  CircularProgressIndicator()) // Show loading indicator while fetching data
+          ? Center(child: CircularProgressIndicator()) // Show loading indicator while fetching data
           : Padding(
-              padding:
-                  const EdgeInsets.all(16.0), // Add padding around the content
+              padding: const EdgeInsets.all(16.0), // Add padding around the content
               child: ListView(
                 children: [
                   SizedBox(height: 20), // Add space above the first text field
                   TextField(
-                    controller: _fnameController, // Controller for first name
+                    controller: _fnameController, // Controller for first name              
                     decoration: InputDecoration(
-                        labelText: 'First Name',
-                        border:
-                            OutlineInputBorder()), // Decoration for first name field
+                        labelText: 'First Name', border: OutlineInputBorder()), // Decoration for first name field
                   ),
                   SizedBox(height: 20), // Add space below the first text field
                   TextField(
                     controller: _lnameController, // Controller for last name
                     decoration: InputDecoration(
-                        labelText: 'Last Name',
-                        border:
-                            OutlineInputBorder()), // Decoration for last name field
+                        labelText: 'Last Name', border: OutlineInputBorder()), // Decoration for last name field
                   ),
-                  SizedBox(
-                      height: 20), // Add space below the last name text field
+                  SizedBox(height: 20), // Add space below the last name text field
                   TextField(
                     controller: _phoneController, // Controller for phone number
                     decoration: InputDecoration(
-                        labelText: 'Phone',
-                        border:
-                            OutlineInputBorder()), // Decoration for phone field
-                    keyboardType:
-                        TextInputType.number, // Set input type to number
+                        labelText: 'Phone', border: OutlineInputBorder()), // Decoration for phone field
+                    keyboardType: TextInputType.number, // Set input type to number
                     inputFormatters: [
-                      FilteringTextInputFormatter
-                          .digitsOnly, // Allow only digits
-                      LengthLimitingTextInputFormatter(
-                          10), // Limit to 10 digits
+                      FilteringTextInputFormatter.digitsOnly, // Allow only digits
+                      LengthLimitingTextInputFormatter(10), // Limit to 10 digits
                     ],
                   ),
                   SizedBox(height: 20), // Add space below the phone text field
+
 
                   GestureDetector(
                     onTap: _openMapScreen,
@@ -200,38 +189,35 @@ class _ProfileScreen2State extends State<ProfileScreen2> {
                         border: OutlineInputBorder(),
                       ),
                       controller: _addressController,
-                      enabled:
-                          false, // Makes the field not editable directly by the user
+                      enabled: false, // Makes the field not editable directly by the user
                     ),
                   ),
 
-                  SizedBox(
-                      height: 20), // Add space below the address text field
 
+                  SizedBox(height: 20), // Add space below the address text field
+                  
                   // Email field (disabled)
                   TextField(
-                    controller: TextEditingController(
-                        text: _userData?['email']), // Set email value
+                    controller:
+                        TextEditingController(text: _userData?['email']), // Set email value
                     decoration: InputDecoration(
-                        labelText: 'Email',
-                        border:
-                            OutlineInputBorder()), // Decoration for email field
+                        labelText: 'Email', border: OutlineInputBorder()), // Decoration for email field
                     enabled: false, // Disable editing
                   ),
                   SizedBox(height: 20), // Add space below the email field
-
+                  
                   // Age range field (disabled)
                   TextField(
-                    controller: TextEditingController(
-                        text: _userData?['agerange']), // Set age range value
+                    controller:
+                        TextEditingController(text: _userData?['agerange']), // Set age range value
                     decoration: InputDecoration(
-                        labelText: 'Age Range',
-                        border:
-                            OutlineInputBorder()), // Decoration for age range field
+                        labelText: 'Age Range', border: OutlineInputBorder()), // Decoration for age range field
                     enabled: false, // Disable editing
                   ),
                   SizedBox(height: 20), // Add space below the age range field
-
+                  
+               
+                  
                   // Update profile button
                   ElevatedButton(
                     onPressed: _updateUserData, // Call _updateUserData on press

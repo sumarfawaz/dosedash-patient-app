@@ -54,10 +54,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _updateUserAddress(String newAddress) async {
     if (_userId != null) {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(_userId)
-          .update({
+      await FirebaseFirestore.instance.collection('users').doc(_userId).update({
         'address': newAddress,
       });
 
@@ -129,7 +126,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Profile'),
+        title: Text(
+          'Profile',
+          style: TextStyle(
+            fontWeight: FontWeight.bold, // Makes the text bold
+          ),
+        ),
         automaticallyImplyLeading: false,
         centerTitle: true,
       ),
@@ -144,7 +146,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     controller: _firstnameController,
                     decoration: InputDecoration(
                       labelText: 'First Name',
-                      border: OutlineInputBorder(),
+                      border: OutlineInputBorder(
+                        borderRadius:
+                            BorderRadius.circular(16.0), // Changed radius
+                      ),
                     ),
                   ),
                   SizedBox(height: 20),
@@ -152,7 +157,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     controller: _lastnameController,
                     decoration: InputDecoration(
                       labelText: 'Last Name',
-                      border: OutlineInputBorder(),
+                      border: OutlineInputBorder(
+                        borderRadius:
+                            BorderRadius.circular(16.0), // Changed radius
+                      ),
                     ),
                   ),
                   SizedBox(height: 20),
@@ -160,7 +168,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     controller: _phoneController,
                     decoration: InputDecoration(
                       labelText: 'Phone',
-                      border: OutlineInputBorder(),
+                      border: OutlineInputBorder(
+                        borderRadius:
+                            BorderRadius.circular(16.0), // Changed radius
+                      ),
                     ),
                     keyboardType: TextInputType.number,
                     inputFormatters: [
@@ -169,45 +180,68 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ],
                   ),
                   SizedBox(height: 20),
-
-
-
                   GestureDetector(
                     onTap: _openMapScreen,
                     child: TextField(
                       decoration: InputDecoration(
                         labelText: 'Click to Find Address *',
-                        border: OutlineInputBorder(),
+                        border: OutlineInputBorder(
+                          borderRadius:
+                              BorderRadius.circular(16.0), // Changed radius
+                        ),
                       ),
                       controller: _addressController,
-                      enabled: false, // Makes the field not editable directly by the user
+                      enabled:
+                          false, // Makes the field not editable directly by the user
                     ),
                   ),
-
-                  
                   SizedBox(height: 20),
                   TextField(
-                    controller: TextEditingController(text: _userData?['email']),
+                    controller:
+                        TextEditingController(text: _userData?['email']),
                     decoration: InputDecoration(
                       labelText: 'Email',
-                      border: OutlineInputBorder(),
+                      border: OutlineInputBorder(
+                        borderRadius:
+                            BorderRadius.circular(16.0), // Changed radius
+                      ),
                     ),
                     enabled: false,
                   ),
                   SizedBox(height: 20),
                   TextField(
-                    controller: TextEditingController(text: _userData?['agerange']),
+                    controller:
+                        TextEditingController(text: _userData?['agerange']),
                     decoration: InputDecoration(
                       labelText: 'Age Range',
-                      border: OutlineInputBorder(),
+                      border: OutlineInputBorder(
+                        borderRadius:
+                            BorderRadius.circular(16.0), // Changed radius
+                      ),
                     ),
                     enabled: false,
                   ),
-                  
                   SizedBox(height: 20),
                   ElevatedButton(
                     onPressed: _updateUserData,
-                    child: Text('Update Profile'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color.fromARGB(
+                          216, 10, 196, 97), // Button background color
+                      shape: RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.circular(12.0), // Button border radius
+                      ),
+                      shadowColor:
+                          Colors.black, // Shadow color around the button
+                      elevation:
+                          8.0, // Shadow elevation (higher for more shadow)
+                    ),
+                    child: const Text(
+                      'Update Profile',
+                      style: TextStyle(
+                        color: Colors.white, // Button text color set to white
+                      ),
+                    ),
                   ),
                 ],
               ),

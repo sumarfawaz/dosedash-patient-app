@@ -1,14 +1,13 @@
-import 'dart:async';
-import 'package:DoseDash/Algorithms/GetUserLocation.dart';
-import 'package:DoseDash/CustomWidgets/OrderSummarySheet.dart';
-import 'package:DoseDash/Pages/PatientScreens/PatientHomeScreen.dart';
-import 'package:DoseDash/Services/stripe_service.dart';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:DoseDash/Algorithms/GetUserLocation.dart';
+import 'package:DoseDash/Services/stripe_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:DoseDash/Pages/PatientScreens/PatientHomeScreen.dart';
 
 class CartScreen extends StatefulWidget {
   final List<Medicine> globalCart;
@@ -65,73 +64,118 @@ class _CartScreenState extends State<CartScreen> {
     }
   }
 
+  Future<void> _handlePayment() async {
+    try {
+      int amount = (_totalPrice * 100).toInt();
+      await StripeService.initPaymentSheet(context, amount.toString(), 'LKR');
+      _placeOrder();
+    } catch (e) {
+      print('Payment failed: $e');
+    }
+  }
 
- Future<void> _handlePlaceOrder() async {
-  try {
-    // Save order to Firestore
-    DocumentReference orderSummaryRef = await FirebaseFirestore.instance.collection('orderSummary').add({
-      'totalPrice': _totalPrice,
-      'orderItems': widget.globalCart.map((item) => {
-        'medicineId': item.id,
-        'name': item.name,
-        'brand': item.brand,
-        'price': item.price,
-        'quantity': item.quantity,
-        'pharmacyId': item.pharmacyId,
-      }).toList(),
-      'timestamp': FieldValue.serverTimestamp(),
-    });
+  void _placeOrder() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString('userid');
 
-    // Show the order summary sheet
-    Completer<bool> sheetClosedCompleter = Completer<bool>();
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) {
-        return OrderSummarySheet(
-          orderSummaryRef: orderSummaryRef,
-          onProceedToPayment: () async {
-            // Payment is successful, clear the cart
+    if (userId != null) {
+      if (_userData == null) {
+        await _fetchUserData();
+      }
+
+      if (_userData != null) {
+        LocationService locationService = LocationService();
+        LatLng? userLocation = await locationService.getUserLocation();
+
+        if (userLocation != null) {
+          List<String> nearbyDeliveryPersons =
+              await locationService.getNearbyDeliveryPersons(userLocation);
+          Map<String, List<Map<String, dynamic>>> groupedOrderItems = {};
+          for (var medicine in widget.globalCart) {
+            var orderItem = {
+              'medicineId': medicine.id,
+              'name': medicine.name,
+              'brand': medicine.brand,
+              'price': medicine.price,
+              'quantity': medicine.quantity,
+              'pharmacyId': medicine.pharmacyId,
+            };
+            if (!groupedOrderItems.containsKey(medicine.pharmacyId)) {
+              groupedOrderItems[medicine.pharmacyId] = [];
+            }
+            groupedOrderItems[medicine.pharmacyId]!.add(orderItem);
+          }
+
+          for (var entry in groupedOrderItems.entries) {
+            String pharmacyId = entry.key;
+            List<Map<String, dynamic>> orderItems = entry.value;
+            await FirebaseFirestore.instance.collection('orders').add({
+              'userId': userId,
+              'pharmacyId': pharmacyId,
+              'user_name':
+                  '${_userData!['firstname']} ${_userData!['lastname']}',
+              'phone_number': _userData!['phone'] ?? '',
+              'orderItems': orderItems,
+              'orderStatus': 'on progress',
+              'timestamp': FieldValue.serverTimestamp(),
+            });
+
+            try {
+              for (String deliveryPersonId in nearbyDeliveryPersons) {
+                await FirebaseFirestore.instance
+                    .collection('notifications')
+                    .add({
+                  'deliveryPersonId': deliveryPersonId,
+                  'userId': userId,
+                  'orderItems': orderItems,
+                  'orderStatus': 'pending',
+                  'timestamp': FieldValue.serverTimestamp(),
+                  'notificationType': 'order',
+                });
+              }
+            } catch (e) {
+              print('Error adding notification: $e');
+            }
+          }
+
+          // Check if the widget is still mounted before showing SnackBar and updating state
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Order placed successfully')),
+            );
+
             setState(() {
               widget.globalCart.clear();
+              _totalPrice = 0.0;
             });
-            sheetClosedCompleter.complete(true);
-          },
-          onCancel: () {
-            sheetClosedCompleter.complete(true); // Close the bottom sheet
-            return Future.value(); // Add a return statement
-          },
-          onClearCart: () async {
-            setState(() {
-              widget.globalCart.clear(); // Clear the cart
-            });
-          },
-        );
-      },
-    );
-
-    await sheetClosedCompleter.future; // Wait for the sheet to be closed
-  } catch (e) {
-    print('Error saving order to Firestore: $e');
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to place order')));
+          }
+        } else {
+          print('Unable to get user location.');
+        }
+      } else {
+        print('User data not available. Cannot place order.');
+      }
+    } else {
+      print('User ID not available. Cannot place order.');
+    }
   }
-}
-
-
-
 
   @override
   Widget build(BuildContext context) {
     _calculateTotalPrice();
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text('Cart'),
-        automaticallyImplyLeading: false,
+        backgroundColor: Colors.white,
+        title: const Text("Your Cart"),
+        titleTextStyle: TextStyle(
+            fontWeight: FontWeight.bold, color: Colors.black, fontSize: 26),
         centerTitle: true,
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: widget.globalCart.isEmpty
                 ? Center(
                     child: Text(
@@ -143,47 +187,184 @@ class _CartScreenState extends State<CartScreen> {
                     itemCount: widget.globalCart.length,
                     itemBuilder: (context, index) {
                       var item = widget.globalCart[index];
-                      return ListTile(
-                        title: Text(item.name),
-                        subtitle: Text(
-                          '${item.brand}\n\රු${item.price.toStringAsFixed(2)} x ${item.quantity} = \රු${(item.price * item.quantity).toStringAsFixed(2)}',
+                      return Dismissible(
+                        key: Key(item.id),
+                        direction: DismissDirection.endToStart,
+                        onDismissed: (direction) {
+                          setState(() {
+                            widget.globalCart.removeAt(index);
+                          });
+                        },
+                        background: Container(
+                          color: Colors.red,
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Icon(Icons.delete, color: Colors.white),
                         ),
-                        trailing: IconButton(
-                          icon: Icon(Icons.remove_shopping_cart),
-                          onPressed: () {
-                            setState(() {
-                              widget.globalCart.removeAt(index);
-                            });
-                          },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: OrderedItemCard(
+                            title: item.name,
+                            description: item.brand,
+                            numOfItem: item.quantity,
+                            price: item.price,
+                          ),
                         ),
                       );
                     },
                   ),
           ),
           if (widget.globalCart.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.all(16.0),
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.all(16.0),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black26,
+                      offset: Offset(0, -1),
+                      blurRadius: 6,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Total:',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF22A45D),
+                          ),
+                        ),
+                        Text(
+                          '\රු${_totalPrice.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF22A45D),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          backgroundColor: const Color(0xFF22A45D),
+                        ),
+                        onPressed: _handlePayment,
+                        child: Text(
+                          'Place Order'.toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// Components
+class OrderedItemCard extends StatelessWidget {
+  final int numOfItem;
+  final String? title, description;
+  final double? price;
+
+  const OrderedItemCard({
+    required this.numOfItem,
+    required this.title,
+    required this.description,
+    required this.price,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            NumOfItems(numOfItem: numOfItem),
+            const SizedBox(width: 12),
+            Expanded(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Total: \රු${_totalPrice.toStringAsFixed(2)}',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.right,
+                    title!,
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
-                  SizedBox(height: 20),
-                  ElevatedButton(
-
-                    onPressed: _handlePlaceOrder,
-
-               
-
-                    child: Text('Place Order'),
+                  const SizedBox(height: 4),
+                  Text(
+                    description!,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
-        ],
+            const SizedBox(width: 8),
+            Text(
+              "\රු${price!.toStringAsFixed(2)}",
+              style: Theme.of(context)
+                  .textTheme
+                  .labelSmall!
+                  .copyWith(color: const Color(0xFF22A45D)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        const Divider(),
+      ],
+    );
+  }
+}
+
+class NumOfItems extends StatelessWidget {
+  final int numOfItem;
+
+  const NumOfItems({required this.numOfItem});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 24,
+      width: 24,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        borderRadius: const BorderRadius.all(Radius.circular(4)),
+        border: Border.all(
+          width: 0.5,
+          color: const Color(0xFF868686).withOpacity(0.3),
+        ),
+      ),
+      child: Text(
+        numOfItem.toString(),
+        style: Theme.of(context)
+            .textTheme
+            .labelLarge!
+            .copyWith(color: const Color(0xFF22A45D)),
       ),
     );
   }
