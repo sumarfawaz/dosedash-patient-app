@@ -248,7 +248,7 @@ void _startLocationUpdates() {
               backgroundColor: Colors.white),
         ],
         currentIndex: _selectedIndex,
-        selectedItemColor: Colors.greenAccent,
+        selectedItemColor: Color(0xFF69F0AE),
         unselectedItemColor: Colors.blueGrey,
         selectedLabelStyle: TextStyle(fontSize: 12),
         unselectedLabelStyle: TextStyle(fontSize: 12),

@@ -1,11 +1,14 @@
+import 'dart:async';
 import 'package:DoseDash/Algorithms/GetUserLocation.dart';
+import 'package:DoseDash/CustomWidgets/OrderSummarySheet.dart';
+import 'package:DoseDash/Pages/PatientScreens/PatientHomeScreen.dart';
 import 'package:DoseDash/Services/stripe_service.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:DoseDash/Pages/PatientScreens/PatientHomeScreen.dart';
 
 class CartScreen extends StatefulWidget {
   final List<Medicine> globalCart;
@@ -31,7 +34,6 @@ class _CartScreenState extends State<CartScreen> {
   void _calculateTotalPrice() {
     _totalPrice = widget.globalCart.fold(0.0, (sum, item) => sum + (item.price * item.quantity));
   }
-
 
   Future<void> _fetchUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -59,120 +61,56 @@ class _CartScreenState extends State<CartScreen> {
     }
   }
 
- 
+ Future<void> _handlePlaceOrder() async {
+  try {
+    // Save order to Firestore
+    DocumentReference orderSummaryRef = await FirebaseFirestore.instance.collection('orderSummary').add({
+      'totalPrice': _totalPrice,
+      'orderItems': widget.globalCart.map((item) => {
+        'medicineId': item.id,
+        'name': item.name,
+        'brand': item.brand,
+        'price': item.price,
+        'quantity': item.quantity,
+        'pharmacyId': item.pharmacyId,
+      }).toList(),
+      'timestamp': FieldValue.serverTimestamp(),
+    });
 
-Future<void> _handlePayment() async {
-    try {
-      // Convert total price to cents (Stripe expects amounts in cents)
-      int amount = (_totalPrice * 100).toInt();
+    // Show the order summary sheet
+    Completer<bool> sheetClosedCompleter = Completer<bool>();
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return OrderSummarySheet(
+          orderSummaryRef: orderSummaryRef,
+          onProceedToPayment: () async {
+            // Payment is successful, clear the cart
+            setState(() {
+              widget.globalCart.clear();
+            });
+            sheetClosedCompleter.complete(true);
+          },
+          onCancel: () {
+            sheetClosedCompleter.complete(true); // Close the bottom sheet
+            return Future.value(); // Add a return statement
+          },
+          onClearCart: () async {
+            setState(() {
+              widget.globalCart.clear(); // Clear the cart
+            });
+          },
+        );
+      },
+    );
 
-      // Initialize the payment sheet
-      await StripeService.initPaymentSheet(context, amount.toString(), 'LKR');
-
-      // On successful payment, place the order
-      _placeOrder();
-    } catch (e) {
-      print('Payment failed: $e');
-    }
-  }
-
-
-   void _placeOrder() async {
-  // Retrieve user ID from SharedPreferences
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  String? userId = prefs.getString('userid');
-
-  // Check if user ID is available
-  if (userId != null) {
-    // Fetch user data if not already available
-    if (_userData == null) {
-      await _fetchUserData();
-    }
-
-    // Proceed if user data is available
-    if (_userData != null) {
-      // Get the user's current location
-      LocationService locationService = LocationService();
-      LatLng? userLocation = await locationService.getUserLocation();
-
-      // Proceed if user location is successfully retrieved
-      if (userLocation != null) {
-        // Fetch delivery persons within a 15 km radius of the user's location
-        List<String> nearbyDeliveryPersons = await locationService.getNearbyDeliveryPersons(userLocation);
-
-        // Group the order items by pharmacy
-        Map<String, List<Map<String, dynamic>>> groupedOrderItems = {};
-        for (var medicine in widget.globalCart) {
-          var orderItem = {
-            'medicineId': medicine.id,
-            'name': medicine.name,
-            'brand': medicine.brand,
-            'price': medicine.price,
-            'quantity': medicine.quantity,
-            'pharmacyId': medicine.pharmacyId,
-          };
-
-          // Add order item to the corresponding pharmacy's list
-          if (!groupedOrderItems.containsKey(medicine.pharmacyId)) {
-            groupedOrderItems[medicine.pharmacyId] = [];
-          }
-          groupedOrderItems[medicine.pharmacyId]!.add(orderItem);
-        }
-
-        // Add the order to Firestore and notify delivery persons
-        for (var entry in groupedOrderItems.entries) {
-          String pharmacyId = entry.key;
-          List<Map<String, dynamic>> orderItems = entry.value;
-
-          // Add the order to Firestore
-          await FirebaseFirestore.instance.collection('orders').add({
-            'userId': userId,
-            'pharmacyId': pharmacyId,
-            'user_name': '${_userData!['firstname']} ${_userData!['lastname']}',
-            'phone_number': _userData!['phone'] ?? '',
-            'orderItems': orderItems,
-            'orderStatus': 'on progress',
-            'timestamp': FieldValue.serverTimestamp(),
-          });
-
-          // Notify delivery persons within the 15 km radius
-          try {
-            for (String deliveryPersonId in nearbyDeliveryPersons) {
-              await FirebaseFirestore.instance.collection('notifications').add({
-                'deliveryPersonId': deliveryPersonId,
-                'userId': userId,
-                'orderItems': orderItems,
-                'orderStatus': 'pending',
-                'timestamp': FieldValue.serverTimestamp(),
-                'notificationType': 'order',
-              });
-              print('Notification sent to delivery person: $deliveryPersonId');
-            }
-          } catch (e) {
-            print('Error adding notification: $e');
-          }
-        }
-
-        // Show a success message and clear the cart
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Order placed successfully')));
-
-        setState(() {
-          widget.globalCart.clear();
-          _totalPrice = 0.0;
-        });
-      } else {
-        print('Unable to get user location.');
-      }
-    } else {
-      print('User data not available. Cannot place order.');
-    }
-  } else {
-    print('User ID not available. Cannot place order.');
+    await sheetClosedCompleter.future; // Wait for the sheet to be closed
+  } catch (e) {
+    print('Error saving order to Firestore: $e');
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to place order')));
   }
 }
-
-        
-
 
 
 
@@ -216,7 +154,6 @@ Future<void> _handlePayment() async {
                     },
                   ),
           ),
-
           if (widget.globalCart.isNotEmpty)
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -230,7 +167,7 @@ Future<void> _handlePayment() async {
                   ),
                   SizedBox(height: 20),
                   ElevatedButton(
-                    onPressed:  _handlePayment,
+                    onPressed: _handlePlaceOrder,
                     child: Text('Place Order'),
                   ),
                 ],

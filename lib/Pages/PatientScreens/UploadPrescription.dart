@@ -1,14 +1,14 @@
-import 'package:DoseDash/Pages/PharmacyScreens/OrderScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'OrderDetailsScreen.dart'; // Ensure this import matches your file structure
 
 class UploadPrescriptionScreen extends StatefulWidget {
   @override
-  _UploadPrescriptionState createState() => _UploadPrescriptionState();
+  _UploadPrescriptionScreenState createState() => _UploadPrescriptionScreenState();
 }
 
-class _UploadPrescriptionState extends State<UploadPrescriptionScreen> {
+class _UploadPrescriptionScreenState extends State<UploadPrescriptionScreen> {
   String? _userId;
 
   @override
@@ -34,7 +34,7 @@ class _UploadPrescriptionState extends State<UploadPrescriptionScreen> {
       body: _userId != null
           ? StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
-                  .collection('orders')
+                  .collection('notifications')
                   .where('userId', isEqualTo: _userId)
                   .snapshots(),
               builder: (context, snapshot) {
@@ -55,19 +55,23 @@ class _UploadPrescriptionState extends State<UploadPrescriptionScreen> {
                 return ListView.builder(
                   itemCount: snapshot.data!.docs.length,
                   itemBuilder: (context, index) {
-                    var order = snapshot.data!.docs[index];
-                    return ListTile(
-                      title: Text('Order ID: ${order.id}'),
-                      subtitle: Text('Status: ${order['orderStatus']}'),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                OrderDetailsScreen(order: order),
-                          ),
-                        );
-                      },
+                    var notification = snapshot.data!.docs[index];
+                    return Card(
+                      margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                      elevation: 4,
+                      child: ListTile(
+                        title: Text('Order ID: ${notification.id}'),
+                        subtitle: Text('Status: ${notification['orderStatus']}'),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  OrderDetailsScreen(notification: notification),
+                            ),
+                          );
+                        },
+                      ),
                     );
                   },
                 );
