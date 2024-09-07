@@ -41,48 +41,49 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBOI8CNIJMjximuVLoqe2WzIDreNck4VBI',
-    appId: '1:119828744488:web:2b6398a14ed9f4a0ede81d',
-    messagingSenderId: '119828744488',
-    projectId: 'dosedash-51e62',
-    authDomain: 'dosedash-51e62.firebaseapp.com',
-    storageBucket: 'dosedash-51e62.appspot.com',
-    measurementId: 'G-BGTQKZVBFK',
+    apiKey: 'AIzaSyCJg_ohEUH5YbWzqqQaHFly8Qw8SP-LzkA',
+    appId: '1:1075915739015:web:21e69d41b2f65f8d11cd22',
+    messagingSenderId: '1075915739015',
+    projectId: 'dosedashvf',
+    authDomain: 'dosedashvf.firebaseapp.com',
+    storageBucket: 'dosedashvf.appspot.com',
+    measurementId: 'G-PTJ1ST4CCY',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDL9IVwnpOPoJLqUGYBBOK73cLghaTr4is',
-    appId: '1:119828744488:android:fcd8aeab03cb821bede81d',
-    messagingSenderId: '119828744488',
-    projectId: 'dosedash-51e62',
-    storageBucket: 'dosedash-51e62.appspot.com',
+    apiKey: 'AIzaSyD0jquLDBLHRqn6bisMOaAnfakxutq53HU',
+    appId: '1:1075915739015:android:79d6decc62b456d811cd22',
+    messagingSenderId: '1075915739015',
+    projectId: 'dosedashvf',
+    storageBucket: 'dosedashvf.appspot.com',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyARpuAW8cRivVX-VT5LFxoMAgOYKy-w7mY',
-    appId: '1:119828744488:ios:f73bf0096c79b011ede81d',
-    messagingSenderId: '119828744488',
-    projectId: 'dosedash-51e62',
-    storageBucket: 'dosedash-51e62.appspot.com',
+    apiKey: 'AIzaSyCxT8D_F7ZMbJK89C70R6GjIBKeao6rXoU',
+    appId: '1:1075915739015:ios:ac21f4327a548de111cd22',
+    messagingSenderId: '1075915739015',
+    projectId: 'dosedashvf',
+    storageBucket: 'dosedashvf.appspot.com',
     iosBundleId: 'com.example.ddpatient',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyARpuAW8cRivVX-VT5LFxoMAgOYKy-w7mY',
-    appId: '1:119828744488:ios:f73bf0096c79b011ede81d',
-    messagingSenderId: '119828744488',
-    projectId: 'dosedash-51e62',
-    storageBucket: 'dosedash-51e62.appspot.com',
+    apiKey: 'AIzaSyCxT8D_F7ZMbJK89C70R6GjIBKeao6rXoU',
+    appId: '1:1075915739015:ios:ac21f4327a548de111cd22',
+    messagingSenderId: '1075915739015',
+    projectId: 'dosedashvf',
+    storageBucket: 'dosedashvf.appspot.com',
     iosBundleId: 'com.example.ddpatient',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyBOI8CNIJMjximuVLoqe2WzIDreNck4VBI',
-    appId: '1:119828744488:web:792ef78ef633950aede81d',
-    messagingSenderId: '119828744488',
-    projectId: 'dosedash-51e62',
-    authDomain: 'dosedash-51e62.firebaseapp.com',
-    storageBucket: 'dosedash-51e62.appspot.com',
-    measurementId: 'G-JR77W3RZLQ',
+    apiKey: 'AIzaSyCJg_ohEUH5YbWzqqQaHFly8Qw8SP-LzkA',
+    appId: '1:1075915739015:web:eb623d70cf1e22d511cd22',
+    messagingSenderId: '1075915739015',
+    projectId: 'dosedashvf',
+    authDomain: 'dosedashvf.firebaseapp.com',
+    storageBucket: 'dosedashvf.appspot.com',
+    measurementId: 'G-96SJHQ9Q2T',
   );
+
 }
