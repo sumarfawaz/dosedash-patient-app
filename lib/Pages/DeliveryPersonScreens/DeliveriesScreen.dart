@@ -1,76 +1,138 @@
-import 'package:flutter/material.dart';
+import 'package:DoseDash/Pages/DeliveryPersonScreens/PickupPointsScreen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 
 class DeliveriesScreen extends StatefulWidget {
-  const DeliveriesScreen({super.key});
+  const DeliveriesScreen({Key? key}) : super(key: key);
 
   @override
-  State<DeliveriesScreen> createState() => _DeliveriesScreenState();
+  _DeliveriesScreenState createState() => _DeliveriesScreenState();
 }
 
 class _DeliveriesScreenState extends State<DeliveriesScreen> {
+  List<QueryDocumentSnapshot<Map<String, dynamic>>> _localNotifications = [];
+
+  Stream<List<QueryDocumentSnapshot<Map<String, dynamic>>>> _fetchNotifications() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      print('No user is logged in.');
+      return Stream.empty(); // Return an empty stream if no user is logged in
+    }
+    final userId = user.uid;
+    print('Fetching notifications for user: $userId');
+
+    return FirebaseFirestore.instance
+        .collection('notifications')
+        .where('deliveryPersonIds', arrayContains: userId)
+        .where('notificationType', isEqualTo: 'order') // Filter by notification type
+        .snapshots()
+        .map((snapshot) {
+          print('Received snapshot with ${snapshot.docs.length} documents.');
+
+          // Use a Map to store the latest notification for each order
+          final notificationsMap = <String, QueryDocumentSnapshot<Map<String, dynamic>>>{};
+
+          for (final doc in snapshot.docs) {
+            final notification = doc.data();
+            final timestamp = notification['timestamp'] as Timestamp?; // Use timestamp or another unique field
+
+            if (timestamp != null) {
+              // Use timestamp to create a unique key
+              final key = '${userId}_${timestamp.seconds}'; // Create a unique key using userId and timestamp
+
+              // Add or replace the notification in the map
+              notificationsMap[key] = doc;
+            }
+          }
+
+          return notificationsMap.values.toList();
+        });
+  }
+
+  void _handleDecline(String notificationId) {
+    print('Attempting to remove notification with ID: $notificationId');
+    setState(() {
+      _localNotifications.removeWhere((notification) {
+        final shouldRemove = notification.id == notificationId;
+        if (shouldRemove) {
+          print('Removing notification with ID: ${notification.id}');
+        }
+        return shouldRemove;
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Deliveries'),
+        title: const Text('Deliveries'),
         automaticallyImplyLeading: false, // Disable the default back arrow
         centerTitle: true,
       ),
-
-      body: StreamBuilder<List<Map<String, dynamic>>>(
+      body: StreamBuilder<List<QueryDocumentSnapshot<Map<String, dynamic>>>>(
         stream: _fetchNotifications(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            // Show a loading indicator while waiting for data
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (snapshot.hasError) {
-            // Display error message if an error occurs
+            print('Error: ${snapshot.error}');
             return Center(child: Text('Error: ${snapshot.error}'));
           }
 
-          final notifications = snapshot.data ?? [];
+          final notifications = snapshot.data ?? []; // Use the data from the stream
+          print('Notifications count: ${notifications.length}');
 
           if (notifications.isEmpty) {
-            // Show a message when there are no notifications
-            return Center(child: Text('No new deliveries.'));
+            return const Center(child: Text('No new deliveries.'));
           }
 
           return ListView.builder(
             itemCount: notifications.length,
             itemBuilder: (context, index) {
-              final notification = notifications[index];
-              return ListTile(
-                title: Text('Order from ${notification['userId']}'),
-                // Show additional details if available
-                subtitle: Text('Order items: ${notification['orderItems']?.length ?? 0}'),
-                trailing: Text('Status: ${notification['status']}'),
+              final notification = notifications[index].data();
+              final pharmacyAddresses = List<String>.from(notification['pharmacy_address'] ?? []);
+              final pharmacyNames = List<String>.from(notification['pharmacy_name'] ?? []);
+              final patientName = notification['patient_name'] ?? 'Unknown';
+              final orderItems = List<Map<String, dynamic>>.from(notification['orderItems'] ?? []);
+              final orderItemCount = orderItems.length;
+              final pharmacyCount = pharmacyAddresses.length;
+
+              return GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PickupPointsScreen(
+                        pharmacyAddresses: pharmacyAddresses,
+                        pharmacyNames: pharmacyNames,
+                        patientAddress: notification['patient_address'] ?? 'Address not available',
+                        notificationId: notifications[index].id, // Pass notification ID
+                        onDecline: () {
+                          _handleDecline(notifications[index].id);
+                        },
+                      ),
+                    ),
+                  );
+                },
+                child: Card(
+                  margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                  elevation: 5.0,
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(16.0),
+                    title: Text('Delivery for $patientName'),
+                    subtitle: Text('Order Items: $orderItemCount\nPickup Locations: $pharmacyCount'),
+                    trailing: const Icon(Icons.arrow_forward),
+                  ),
+                ),
               );
             },
           );
         },
       ),
     );
-  }
-
-  // Fetch notifications for the current delivery person
-  Stream<List<Map<String, dynamic>>> _fetchNotifications() {
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId != null) {
-      // Query Firestore for notifications matching the deliveryPersonId
-      return FirebaseFirestore.instance
-          .collection('notifications')
-          .where('deliveryPersonId', isEqualTo: userId)
-          .snapshots()
-          .map((snapshot) => snapshot.docs
-              .map((doc) => doc.data())
-              .toList());
-    } else {
-      // Return an empty list if user ID is not available
-      return Stream.value([]);
-    }
   }
 }

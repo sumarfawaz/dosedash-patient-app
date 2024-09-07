@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:hexcolor/hexcolor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../Services/AuthService.dart';
@@ -61,6 +60,8 @@ class _PatientHomeScreenState extends State<Patienthomescreen>
       print("Auth token is not available.");
     }
   }
+
+
 
   Future<void> _fetchMedicines() async {
     LocationService locationService = LocationService();
@@ -144,9 +145,11 @@ class _PatientHomeScreenState extends State<Patienthomescreen>
           ? CircularProgressIndicator()
           : Column(
               children: [
-                SizedBox(
-                  height: 20,
+                Text(
+                  'Welcome, ${_userData!['firstname']} ${_userData!['lastname']}!',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
+                SizedBox(height: 20),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: TextField(
@@ -154,142 +157,82 @@ class _PatientHomeScreenState extends State<Patienthomescreen>
                     decoration: InputDecoration(
                       labelText: 'Search Medicines',
                       prefixIcon: Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius:
-                            BorderRadius.circular(20.0), // Rounded corners
-                        borderSide: BorderSide.none, // Remove border outline
-                      ),
-                      filled: true, // Enable background color
-                      fillColor: Colors.grey[200], // Set background color
+                      border: OutlineInputBorder(),
                     ),
                     onChanged: _onSearchTextChanged,
                   ),
                 ),
-                SizedBox(height: 10),
+                SizedBox(height: 20),
                 Expanded(
                   child: GridView.builder(
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
+                      crossAxisCount: 3,
                       childAspectRatio: 3 / 4, // Adjust ratio for card layout
                     ),
                     itemCount: _filteredMedicines.length,
                     itemBuilder: (context, index) {
                       var medicine = _filteredMedicines[index];
                       return Card(
-                        color: Colors.white, // Card background color
-                        elevation: 5, // Elevation (shadow) for the card
+                        elevation: 5,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                              20), // Rounded corners for the Card
+                          borderRadius: BorderRadius.circular(10),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             Expanded(
                               child: medicine.image.isNotEmpty
-                                  ? ClipRRect(
-                                      borderRadius: BorderRadius.vertical(
-                                          top: Radius.circular(20)),
-                                      child: Image.memory(
-                                        base64Decode(medicine.image),
-                                        fit: BoxFit.contain,
-                                      ),
+                                  ? Image.memory(
+                                      base64Decode(medicine.image),
+                                      fit: BoxFit.cover,
                                     )
-                                  : ClipRRect(
-                                      borderRadius: BorderRadius.vertical(
-                                          top: Radius.circular(20)),
-                                      child:
-                                          Container(), // Placeholder if no image
-                                    ),
+                                  : Container(), // Placeholder if no image
                             ),
-                            // Dark grey background color for the section below the image
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Color(
-                                    0xFF686D76), // Dark grey background color
-                                borderRadius: BorderRadius.vertical(
-                                  bottom: Radius.circular(
-                                      20), // Rounded bottom corners to match the card
-                                ),
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    medicine.name,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    medicine.brand,
+                                    style: TextStyle(color: Colors.grey),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    '\රු${medicine.price.toStringAsFixed(2)}',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(
-                                    8.0), // Padding around the text and button
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      medicine.name,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                        color: Colors
-                                            .white, // Text color for better visibility on dark grey background
+                            ),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 8.0),
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          MedicineDetailScreen(
+                                        medicine: medicine,
+                                        addToCart: _addToCart,
                                       ),
                                     ),
-                                    SizedBox(height: 4),
-                                    Text(
-                                      medicine.brand,
-                                      style: TextStyle(
-                                        color: Colors.grey[
-                                            400], // Light grey for the brand text
-                                      ),
-                                    ),
-                                    SizedBox(height: 4),
-                                    Text(
-                                      '\රු${medicine.price.toStringAsFixed(2)}',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors
-                                            .white, // Text color for better visibility
-                                      ),
-                                    ),
-                                    SizedBox(
-                                        height:
-                                            8), // Add some spacing before the button
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment
-                                          .center, // Center the button
-                                      children: [
-                                        SizedBox(
-                                          width: 150, // Button width
-                                          child: ElevatedButton(
-                                            onPressed: () {
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      MedicineDetailScreen(
-                                                    medicine: medicine,
-                                                    addToCart: _addToCart,
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: Color(
-                                                  0xFF11BA63), // Button background color
-                                              elevation:
-                                                  5, // Elevation for shadow
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(
-                                                    20.0), // Rounded corners for button
-                                              ),
-                                            ),
-                                            child: Text(
-                                              'Buy',
-                                              style: TextStyle(
-                                                color: Colors
-                                                    .white, // Text color inside button
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
+                                  );
+                                },
+                                child: Text('Buy'),
                               ),
                             ),
                           ],
@@ -297,7 +240,7 @@ class _PatientHomeScreenState extends State<Patienthomescreen>
                       );
                     },
                   ),
-                )
+                ),
               ],
             ),
     );
@@ -309,138 +252,24 @@ class _PatientHomeScreenState extends State<Patienthomescreen>
     });
   }
 
-  /*@override
+  @override
   Widget build(BuildContext context) {
     super.build(
         context); // Call to super.build for AutomaticKeepAliveClientMixin
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(120.0),
-        child: ClipRRect(
-          borderRadius: BorderRadius.only(
-            bottomLeft: Radius.circular(30.0),
-            bottomRight: Radius.circular(30.0),
+      appBar: AppBar(
+        title: Text('DoseDash'),
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.greenAccent,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.account_circle),
+            iconSize: 35,
+            onPressed: () {
+              _setProfilePicture(context);
+            },
           ),
-          child: Container(
-            padding: EdgeInsets.only(top: 40.0, left: 16.0, right: 16.0),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color.fromARGB(131, 54, 221, 104),
-                  Color.fromARGB(255, 69, 234, 143)
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.5),
-                  blurRadius: 10.0,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'DoseDash Delivery',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color.fromARGB(255, 19, 19, 19),
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.account_circle, size: 35),
-                      onPressed: () {
-                        _setProfilePicture(context);
-                      },
-                    ),
-                  ],
-                ),
-                SizedBox(height: 1),
-                if (_userData != null)
-                  Text(
-                    'Welcome, ${_userData!['firstname']} ${_userData!['lastname']}!',
-                    style: TextStyle(
-                      fontSize: 20, /*fontWeight: FontWeight.bold*/
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),*/
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(120.0),
-        child: ClipRRect(
-          borderRadius: BorderRadius.only(
-            bottomLeft: Radius.circular(30.0),
-            bottomRight: Radius.circular(30.0),
-          ),
-          child: Container(
-            padding: EdgeInsets.only(top: 40.0, left: 16.0, right: 16.0),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color.fromARGB(131, 54, 221, 104),
-                  Color.fromARGB(255, 69, 234, 143)
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black26,
-                  blurRadius: 10.0,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'DoseDash Patient',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color.fromARGB(255, 19, 19, 19),
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.logout, size: 35),
-                      onPressed: () {
-                        _setProfilePicture(context);
-                      },
-                    ),
-                  ],
-                ),
-                SizedBox(height: 1),
-                if (_userData != null)
-                  Text(
-                    'Welcome, ${_userData!['firstname']} ${_userData!['lastname']}!',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color.fromARGB(168, 23, 22, 22),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
+        ],
       ),
       body: _getSelectedScreen(),
       bottomNavigationBar: BottomNavigationBar(
@@ -460,8 +289,8 @@ class _PatientHomeScreenState extends State<Patienthomescreen>
             label: 'Cart',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.label, size: 30),
-            label: 'Order History',
+            icon: Icon(Icons.upload, size: 30),
+            label: 'Upload',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.account_circle, size: 30),
@@ -507,19 +336,19 @@ class _PatientHomeScreenState extends State<Patienthomescreen>
 class Medicine {
   final String id;
   final String name;
-  final String image;
   final String brand;
   final double price;
-  int quantity;
   final String pharmacyId;
+  final String image; // Add this field to store base64 image string
+  int quantity;
 
   Medicine({
     required this.id,
     required this.name,
-    required this.image,
     required this.brand,
     required this.price,
-    this.quantity = 1,
     required this.pharmacyId,
+    required this.image,
+    this.quantity = 1,
   });
 }
