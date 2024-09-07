@@ -1,8 +1,6 @@
-
-import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:DoseDash/Algorithms/GetUserLocation.dart';
 import 'package:DoseDash/Services/stripe_service.dart';
+import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -66,8 +64,13 @@ class _CartScreenState extends State<CartScreen> {
 
   Future<void> _handlePayment() async {
     try {
+      // Convert total price to cents (Stripe expects amounts in cents)
       int amount = (_totalPrice * 100).toInt();
+
+      // Initialize the payment sheet
       await StripeService.initPaymentSheet(context, amount.toString(), 'LKR');
+
+      // On successful payment, place the order
       _placeOrder();
     } catch (e) {
       print('Payment failed: $e');
@@ -75,22 +78,33 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   void _placeOrder() async {
+    // Retrieve user ID from SharedPreferences
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? userId = prefs.getString('userid');
 
+    // Check if user ID is available
     if (userId != null) {
+      // Fetch user data if not already available
       if (_userData == null) {
         await _fetchUserData();
       }
 
+      // Proceed if user data is available
       if (_userData != null) {
+        // Get the user's current location
         LocationService locationService = LocationService();
         LatLng? userLocation = await locationService.getUserLocation();
 
+        // Proceed if user location is successfully retrieved
         if (userLocation != null) {
+          // Fetch delivery persons within a 15 km radius of the user's location
           List<String> nearbyDeliveryPersons =
               await locationService.getNearbyDeliveryPersons(userLocation);
+
+          // Group the order items by pharmacy and fetch the pharmacy details
           Map<String, List<Map<String, dynamic>>> groupedOrderItems = {};
+          Map<String, Map<String, dynamic>> pharmacyDetails = {};
+
           for (var medicine in widget.globalCart) {
             var orderItem = {
               'medicineId': medicine.id,
@@ -100,55 +114,97 @@ class _CartScreenState extends State<CartScreen> {
               'quantity': medicine.quantity,
               'pharmacyId': medicine.pharmacyId,
             };
+
+            // Add order item to the corresponding pharmacy's list
             if (!groupedOrderItems.containsKey(medicine.pharmacyId)) {
               groupedOrderItems[medicine.pharmacyId] = [];
             }
             groupedOrderItems[medicine.pharmacyId]!.add(orderItem);
+
+            // Fetch pharmacy details if not already fetched
+            if (!pharmacyDetails.containsKey(medicine.pharmacyId)) {
+              DocumentSnapshot pharmacyDoc = await FirebaseFirestore.instance
+                  .collection('pharmacies')
+                  .doc(medicine.pharmacyId)
+                  .get();
+
+              if (pharmacyDoc.exists) {
+                pharmacyDetails[medicine.pharmacyId] = {
+                  'address': pharmacyDoc['address'],
+                  'name': pharmacyDoc['pharmacyName'],
+                };
+              } else {
+                print('Pharmacy not found for ID: ${medicine.pharmacyId}');
+              }
+            }
           }
 
+          // Prepare the lists for pharmacy names and addresses
+          List<String> pharmacyNames = pharmacyDetails.values
+              .map((details) => details['name'] as String)
+              .toList();
+          List<String> pharmacyAddresses = pharmacyDetails.values
+              .map((details) => details['address'] as String)
+              .toList();
+
+          // Add the order to Firestore and get the order ID
+          String? orderId;
           for (var entry in groupedOrderItems.entries) {
             String pharmacyId = entry.key;
             List<Map<String, dynamic>> orderItems = entry.value;
-            await FirebaseFirestore.instance.collection('orders').add({
+
+            // Add the order to Firestore and retrieve the orderId
+            DocumentReference orderRef =
+                await FirebaseFirestore.instance.collection('orders').add({
               'userId': userId,
               'pharmacyId': pharmacyId,
               'user_name':
                   '${_userData!['firstname']} ${_userData!['lastname']}',
+              'user_address': '${_userData!['address']}', // User address
               'phone_number': _userData!['phone'] ?? '',
               'orderItems': orderItems,
               'orderStatus': 'on progress',
               'timestamp': FieldValue.serverTimestamp(),
             });
 
-            try {
-              for (String deliveryPersonId in nearbyDeliveryPersons) {
-                await FirebaseFirestore.instance
-                    .collection('notifications')
-                    .add({
-                  'deliveryPersonId': deliveryPersonId,
-                  'userId': userId,
-                  'orderItems': orderItems,
-                  'orderStatus': 'pending',
-                  'timestamp': FieldValue.serverTimestamp(),
-                  'notificationType': 'order',
-                });
-              }
-            } catch (e) {
-              print('Error adding notification: $e');
-            }
+            // Get the order ID
+            orderId = orderRef.id;
           }
 
-          // Check if the widget is still mounted before showing SnackBar and updating state
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Order placed successfully')),
-            );
-
-            setState(() {
-              widget.globalCart.clear();
-              _totalPrice = 0.0;
+          // Notify delivery persons within the 15 km radius with a single document
+          try {
+            await FirebaseFirestore.instance.collection('notifications').add({
+              'orderId': orderId, // Add the orderId here
+              'deliveryPersonIds': null, // List of delivery person IDs
+              'userId': userId,
+              'orderItems':
+                  groupedOrderItems.values.expand((items) => items).toList(),
+              'orderStatus': 'pending',
+              'timestamp': FieldValue.serverTimestamp(),
+              'notificationType': 'order',
+              'patient_name':
+                  '${_userData!['firstname']} ${_userData!['lastname']}',
+              'patient_address': '${_userData!['address']}', // User address
+              'pharmacy_name': pharmacyNames, // List of pharmacy names
+              'pharmacy_address':
+                  pharmacyAddresses, // List of pharmacy addresses
+              'totalPrice': _totalPrice, // Add total price here
             });
+
+            print(
+                'Notification sent to delivery persons: $nearbyDeliveryPersons');
+          } catch (e) {
+            print('Error adding notification: $e');
           }
+
+          // Show a success message and clear the cart
+          ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Order placed successfully')));
+
+          setState(() {
+            widget.globalCart.clear();
+            _totalPrice = 0.0;
+          });
         } else {
           print('Unable to get user location.');
         }
@@ -164,18 +220,14 @@ class _CartScreenState extends State<CartScreen> {
   Widget build(BuildContext context) {
     _calculateTotalPrice();
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        title: const Text("Your Cart"),
-        titleTextStyle: TextStyle(
-            fontWeight: FontWeight.bold, color: Colors.black, fontSize: 26),
+        title: Text('Cart'),
+        automaticallyImplyLeading: false,
         centerTitle: true,
       ),
-      body: Stack(
+      body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+          Expanded(
             child: widget.globalCart.isEmpty
                 ? Center(
                     child: Text(
@@ -187,184 +239,43 @@ class _CartScreenState extends State<CartScreen> {
                     itemCount: widget.globalCart.length,
                     itemBuilder: (context, index) {
                       var item = widget.globalCart[index];
-                      return Dismissible(
-                        key: Key(item.id),
-                        direction: DismissDirection.endToStart,
-                        onDismissed: (direction) {
-                          setState(() {
-                            widget.globalCart.removeAt(index);
-                          });
-                        },
-                        background: Container(
-                          color: Colors.red,
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Icon(Icons.delete, color: Colors.white),
+                      return ListTile(
+                        title: Text(item.name),
+                        subtitle: Text(
+                          '${item.brand}\n\රු${item.price.toStringAsFixed(2)} x ${item.quantity} = \රු${(item.price * item.quantity).toStringAsFixed(2)}',
                         ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: OrderedItemCard(
-                            title: item.name,
-                            description: item.brand,
-                            numOfItem: item.quantity,
-                            price: item.price,
-                          ),
+                        trailing: IconButton(
+                          icon: Icon(Icons.remove_shopping_cart),
+                          onPressed: () {
+                            setState(() {
+                              widget.globalCart.removeAt(index);
+                            });
+                          },
                         ),
                       );
                     },
                   ),
           ),
           if (widget.globalCart.isNotEmpty)
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                padding: const EdgeInsets.all(16.0),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black26,
-                      offset: Offset(0, -1),
-                      blurRadius: 6,
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Total:',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF22A45D),
-                          ),
-                        ),
-                        Text(
-                          '\රු${_totalPrice.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF22A45D),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          backgroundColor: const Color(0xFF22A45D),
-                        ),
-                        onPressed: _handlePayment,
-                        child: Text(
-                          'Place Order'.toUpperCase(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-// Components
-class OrderedItemCard extends StatelessWidget {
-  final int numOfItem;
-  final String? title, description;
-  final double? price;
-
-  const OrderedItemCard({
-    required this.numOfItem,
-    required this.title,
-    required this.description,
-    required this.price,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            NumOfItems(numOfItem: numOfItem),
-            const SizedBox(width: 12),
-            Expanded(
+            Padding(
+              padding: const EdgeInsets.all(16.0),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    title!,
-                    style: Theme.of(context).textTheme.titleMedium,
+                    'Total: \රු${_totalPrice.toStringAsFixed(2)}',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.right,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    description!,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                  SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: _handlePayment,
+                    child: Text('Place Order'),
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 8),
-            Text(
-              "\රු${price!.toStringAsFixed(2)}",
-              style: Theme.of(context)
-                  .textTheme
-                  .labelSmall!
-                  .copyWith(color: const Color(0xFF22A45D)),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        const Divider(),
-      ],
-    );
-  }
-}
-
-class NumOfItems extends StatelessWidget {
-  final int numOfItem;
-
-  const NumOfItems({required this.numOfItem});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 24,
-      width: 24,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        borderRadius: const BorderRadius.all(Radius.circular(4)),
-        border: Border.all(
-          width: 0.5,
-          color: const Color(0xFF868686).withOpacity(0.3),
-        ),
-      ),
-      child: Text(
-        numOfItem.toString(),
-        style: Theme.of(context)
-            .textTheme
-            .labelLarge!
-            .copyWith(color: const Color(0xFF22A45D)),
+        ],
       ),
     );
   }

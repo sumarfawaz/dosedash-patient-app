@@ -20,10 +20,7 @@ class OrderDetailsScreen extends StatelessWidget {
           children: [
             Text(
               'Order ID: ${order.id}',
-              style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 10),
             Text(

@@ -200,6 +200,7 @@ class Authservice {
           'email': email,
           'role': 'Deliveryperson',
           'uid': user.uid,
+          'active': 'offline',
         });
 
         // Retrieving and storing the token and UID in SharedPreferences

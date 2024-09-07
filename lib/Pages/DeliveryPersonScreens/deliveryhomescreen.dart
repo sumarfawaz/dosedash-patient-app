@@ -21,6 +21,7 @@ class DeliveryHomeScreen extends StatefulWidget {
 class _DeliveryHomeScreenState extends State<DeliveryHomeScreen> {
   User? _user;
   Map<String, dynamic>? _deliveryData;
+  List<QueryDocumentSnapshot> _deliveryDataActive = [];
   int _selectedIndex = 0;
   int _completedOrders = 0;
   LatLng? _liveLocation;
@@ -220,17 +221,67 @@ class _DeliveryHomeScreenState extends State<DeliveryHomeScreen> {
                         value: _completedOrders.toString(),
                       ),
                       _buildInfoCard(
-                        title: 'Live Location',
-                        value: _liveLocation != null
-                            ? '${_liveLocation!.latitude}, ${_liveLocation!.longitude}'
-                            : 'Location not available',
+                        title: 'Active Status',
+                        value:
+                            _deliveryData!['active'].toString().toUpperCase() ??
+                                'N/A', // Dynamically display the active status
                       ),
                     ],
                   ),
+                  SizedBox(height: 20),
+                  Center(
+                      child: ElevatedButton(
+                    onPressed: () {
+                      _changeActiveStatus();
+                    },
+                    child: Text('CHANGE ACTIVE STATUS'),
+                  ))
                 ],
               ),
             ),
           );
+  }
+
+  Future<void> _changeActiveStatus() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString('userid');
+
+    try {
+      // Query the DeliveryPersons collection to find the document by user ID
+      QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('DeliveryPersons')
+          .where('uid', isEqualTo: userId)
+          .get();
+
+      // Check if any documents were found
+      if (snapshot.docs.isNotEmpty) {
+        // Loop through the results (even though there should be only one match)
+        for (var doc in snapshot.docs) {
+          // Get the current value of the 'active' field
+          String currentStatus = doc['active'];
+
+          // Determine the new status based on the current status
+          String newStatus = (currentStatus == 'online') ? 'offline' : 'online';
+
+          // Update the document with the new status
+          await FirebaseFirestore.instance
+              .collection('DeliveryPersons')
+              .doc(doc.id)
+              .update({
+            'active': newStatus, // Toggle the active field
+          });
+
+          print('Updated active status to $newStatus for userId: $userId');
+        }
+
+        // Refetch the delivery data to reflect the changes in the UI
+        await _fetchDeliveryPersonData();
+      } else {
+        print('No matching delivery persons found for userId: $userId');
+      }
+    } catch (e) {
+      print(e);
+    }
   }
 
   Widget _buildInfoCard({required String title, required dynamic value}) {
