@@ -29,9 +29,9 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   void _calculateTotalPrice() {
-    _totalPrice = widget.globalCart.fold(0.0, (sum, item) => sum + (item.price * item.quantity));
+    _totalPrice = widget.globalCart
+        .fold(0.0, (sum, item) => sum + (item.price * item.quantity));
   }
-
 
   Future<void> _fetchUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -42,7 +42,10 @@ class _CartScreenState extends State<CartScreen> {
       _user = FirebaseAuth.instance.currentUser;
 
       if (_user != null) {
-        DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .get();
 
         setState(() {
           _userData = userDoc.data() as Map<String, dynamic>?;
@@ -59,9 +62,7 @@ class _CartScreenState extends State<CartScreen> {
     }
   }
 
- 
-
-Future<void> _handlePayment() async {
+  Future<void> _handlePayment() async {
     try {
       // Convert total price to cents (Stripe expects amounts in cents)
       int amount = (_totalPrice * 100).toInt();
@@ -76,105 +77,144 @@ Future<void> _handlePayment() async {
     }
   }
 
+  void _placeOrder() async {
+    // Retrieve user ID from SharedPreferences
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString('userid');
 
-   void _placeOrder() async {
-  // Retrieve user ID from SharedPreferences
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  String? userId = prefs.getString('userid');
+    // Check if user ID is available
+    if (userId != null) {
+      // Fetch user data if not already available
+      if (_userData == null) {
+        await _fetchUserData();
+      }
 
-  // Check if user ID is available
-  if (userId != null) {
-    // Fetch user data if not already available
-    if (_userData == null) {
-      await _fetchUserData();
-    }
+      // Proceed if user data is available
+      if (_userData != null) {
+        // Get the user's current location
+        LocationService locationService = LocationService();
+        LatLng? userLocation = await locationService.getUserLocation();
 
-    // Proceed if user data is available
-    if (_userData != null) {
-      // Get the user's current location
-      LocationService locationService = LocationService();
-      LatLng? userLocation = await locationService.getUserLocation();
+        // Proceed if user location is successfully retrieved
+        if (userLocation != null) {
+          // Fetch delivery persons within a 15 km radius of the user's location
+          List<String> nearbyDeliveryPersons =
+              await locationService.getNearbyDeliveryPersons(userLocation);
 
-      // Proceed if user location is successfully retrieved
-      if (userLocation != null) {
-        // Fetch delivery persons within a 15 km radius of the user's location
-        List<String> nearbyDeliveryPersons = await locationService.getNearbyDeliveryPersons(userLocation);
+          // Group the order items by pharmacy and fetch the pharmacy details
+          Map<String, List<Map<String, dynamic>>> groupedOrderItems = {};
+          Map<String, Map<String, dynamic>> pharmacyDetails = {};
 
-        // Group the order items by pharmacy
-        Map<String, List<Map<String, dynamic>>> groupedOrderItems = {};
-        for (var medicine in widget.globalCart) {
-          var orderItem = {
-            'medicineId': medicine.id,
-            'name': medicine.name,
-            'brand': medicine.brand,
-            'price': medicine.price,
-            'quantity': medicine.quantity,
-            'pharmacyId': medicine.pharmacyId,
-          };
+          for (var medicine in widget.globalCart) {
+            var orderItem = {
+              'medicineId': medicine.id,
+              'name': medicine.name,
+              'brand': medicine.brand,
+              'price': medicine.price,
+              'quantity': medicine.quantity,
+              'pharmacyId': medicine.pharmacyId,
+            };
 
-          // Add order item to the corresponding pharmacy's list
-          if (!groupedOrderItems.containsKey(medicine.pharmacyId)) {
-            groupedOrderItems[medicine.pharmacyId] = [];
-          }
-          groupedOrderItems[medicine.pharmacyId]!.add(orderItem);
-        }
-
-        // Add the order to Firestore and notify delivery persons
-        for (var entry in groupedOrderItems.entries) {
-          String pharmacyId = entry.key;
-          List<Map<String, dynamic>> orderItems = entry.value;
-
-          // Add the order to Firestore
-          await FirebaseFirestore.instance.collection('orders').add({
-            'userId': userId,
-            'pharmacyId': pharmacyId,
-            'user_name': '${_userData!['firstname']} ${_userData!['lastname']}',
-            'phone_number': _userData!['phone'] ?? '',
-            'orderItems': orderItems,
-            'orderStatus': 'on progress',
-            'timestamp': FieldValue.serverTimestamp(),
-          });
-
-          // Notify delivery persons within the 15 km radius
-          try {
-            for (String deliveryPersonId in nearbyDeliveryPersons) {
-              await FirebaseFirestore.instance.collection('notifications').add({
-                'deliveryPersonId': deliveryPersonId,
-                'userId': userId,
-                'orderItems': orderItems,
-                'orderStatus': 'pending',
-                'timestamp': FieldValue.serverTimestamp(),
-                'notificationType': 'order',
-              });
-              print('Notification sent to delivery person: $deliveryPersonId');
+            // Add order item to the corresponding pharmacy's list
+            if (!groupedOrderItems.containsKey(medicine.pharmacyId)) {
+              groupedOrderItems[medicine.pharmacyId] = [];
             }
+            groupedOrderItems[medicine.pharmacyId]!.add(orderItem);
+
+            // Fetch pharmacy details if not already fetched
+            if (!pharmacyDetails.containsKey(medicine.pharmacyId)) {
+              DocumentSnapshot pharmacyDoc = await FirebaseFirestore.instance
+                  .collection('pharmacies')
+                  .doc(medicine.pharmacyId)
+                  .get();
+
+              if (pharmacyDoc.exists) {
+                pharmacyDetails[medicine.pharmacyId] = {
+                  'address': pharmacyDoc['address'],
+                  'name': pharmacyDoc['pharmacyName'],
+                };
+              } else {
+                print('Pharmacy not found for ID: ${medicine.pharmacyId}');
+              }
+            }
+          }
+
+          // Prepare the lists for pharmacy names and addresses
+          List<String> pharmacyNames = pharmacyDetails.values
+              .map((details) => details['name'] as String)
+              .toList();
+          List<String> pharmacyAddresses = pharmacyDetails.values
+              .map((details) => details['address'] as String)
+              .toList();
+
+          // Add the order to Firestore and get the order ID
+          String? orderId;
+          for (var entry in groupedOrderItems.entries) {
+            String pharmacyId = entry.key;
+            List<Map<String, dynamic>> orderItems = entry.value;
+
+            // Add the order to Firestore and retrieve the orderId
+            DocumentReference orderRef =
+                await FirebaseFirestore.instance.collection('orders').add({
+              'userId': userId,
+              'pharmacyId': pharmacyId,
+              'user_name':
+                  '${_userData!['firstname']} ${_userData!['lastname']}',
+              'user_address': '${_userData!['address']}', // User address
+              'phone_number': _userData!['phone'] ?? '',
+              'orderItems': orderItems,
+              'orderStatus': 'on progress',
+              'timestamp': FieldValue.serverTimestamp(),
+            });
+
+            // Get the order ID
+            orderId = orderRef.id;
+          }
+
+          // Notify delivery persons within the 15 km radius with a single document
+          try {
+            await FirebaseFirestore.instance.collection('notifications').add({
+              'orderId': orderId, // Add the orderId here
+              'deliveryPersonIds': null, // List of delivery person IDs
+              'userId': userId,
+              'orderItems':
+                  groupedOrderItems.values.expand((items) => items).toList(),
+              'orderStatus': 'pending',
+              'timestamp': FieldValue.serverTimestamp(),
+              'notificationType': 'order',
+              'patient_name':
+                  '${_userData!['firstname']} ${_userData!['lastname']}',
+              'patient_address': '${_userData!['address']}', // User address
+              'pharmacy_name': pharmacyNames, // List of pharmacy names
+              'pharmacy_address':
+                  pharmacyAddresses, // List of pharmacy addresses
+              'totalPrice': _totalPrice, // Add total price here
+            });
+
+            print(
+                'Notification sent to delivery persons: $nearbyDeliveryPersons');
           } catch (e) {
             print('Error adding notification: $e');
           }
+
+          // Show a success message and clear the cart
+          ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Order placed successfully')));
+
+          setState(() {
+            widget.globalCart.clear();
+            _totalPrice = 0.0;
+          });
+        } else {
+          print('Unable to get user location.');
         }
-
-        // Show a success message and clear the cart
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Order placed successfully')));
-
-        setState(() {
-          widget.globalCart.clear();
-          _totalPrice = 0.0;
-        });
       } else {
-        print('Unable to get user location.');
+        print('User data not available. Cannot place order.');
       }
     } else {
-      print('User data not available. Cannot place order.');
+      print('User ID not available. Cannot place order.');
     }
-  } else {
-    print('User ID not available. Cannot place order.');
   }
-}
-
-        
-
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -216,7 +256,6 @@ Future<void> _handlePayment() async {
                     },
                   ),
           ),
-
           if (widget.globalCart.isNotEmpty)
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -230,7 +269,7 @@ Future<void> _handlePayment() async {
                   ),
                   SizedBox(height: 20),
                   ElevatedButton(
-                    onPressed:  _handlePayment,
+                    onPressed: _handlePayment,
                     child: Text('Place Order'),
                   ),
                 ],
