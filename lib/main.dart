@@ -8,8 +8,10 @@ import 'package:DoseDash/Pages/PharmacyRegistrationScreen.dart';
 import 'package:DoseDash/Pages/PharmacyScreens/PharmacyHomeScreen.dart';
 import 'package:DoseDash/Pages/SelectionScreen.dart';
 import 'package:DoseDash/Pages/TermsConditions.dart';
+import 'package:DoseDash/Services/NotificationService.dart';
 import 'package:DoseDash/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import './Pages/SplashScreen.dart';
@@ -17,14 +19,19 @@ import './Pages/AuthenticationScreen.dart'; // Import your authentication screen
 import 'Pages/RegistrationScreen.dart';
 import 'package:flutter_stripe/flutter_stripe.dart'; // Import Stripe
 
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  FirebaseMessaging messaging = FirebaseMessaging
+      .instance; //Adding Firebase Messaging for Push Notifications
 
   // Initialize Stripe with your publishable key
-  Stripe.publishableKey = 'pk_test_51PnzGOENPvFTECCdSCFkRSbSWOTNiiU7zkjB2uBNESFhVdd1hQDr2guKZuaMVMAVzEXtuVe3KTyuYVOHKSl1kEZa004o3o0kla'; // Replace with your Stripe Publishable Key
+  Stripe.publishableKey =
+      'pk_test_51PnzGOENPvFTECCdSCFkRSbSWOTNiiU7zkjB2uBNESFhVdd1hQDr2guKZuaMVMAVzEXtuVe3KTyuYVOHKSl1kEZa004o3o0kla'; // Replace with your Stripe Publishable Key
+
+  // NotificationService notificationService = NotificationService();
+  // notificationService.init();
 
   runApp(
     ChangeNotifierProvider(
@@ -33,7 +40,6 @@ Future<void> main() async {
     ),
   );
 }
-
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

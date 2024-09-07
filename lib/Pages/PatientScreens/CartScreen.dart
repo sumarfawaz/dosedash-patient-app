@@ -32,7 +32,8 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   void _calculateTotalPrice() {
-    _totalPrice = widget.globalCart.fold(0.0, (sum, item) => sum + (item.price * item.quantity));
+    _totalPrice = widget.globalCart
+        .fold(0.0, (sum, item) => sum + (item.price * item.quantity));
   }
 
   Future<void> _fetchUserData() async {
@@ -44,7 +45,10 @@ class _CartScreenState extends State<CartScreen> {
       _user = FirebaseAuth.instance.currentUser;
 
       if (_user != null) {
-        DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .get();
 
         setState(() {
           _userData = userDoc.data() as Map<String, dynamic>?;
@@ -60,6 +64,7 @@ class _CartScreenState extends State<CartScreen> {
       print("Auth token is not available.");
     }
   }
+
 
  Future<void> _handlePlaceOrder() async {
   try {
@@ -111,6 +116,7 @@ class _CartScreenState extends State<CartScreen> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to place order')));
   }
 }
+
 
 
 
@@ -167,7 +173,11 @@ class _CartScreenState extends State<CartScreen> {
                   ),
                   SizedBox(height: 20),
                   ElevatedButton(
+
                     onPressed: _handlePlaceOrder,
+
+               
+
                     child: Text('Place Order'),
                   ),
                 ],
