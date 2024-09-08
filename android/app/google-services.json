@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1075915739015",
+    "project_id": "dosedashvf",
+    "storage_bucket": "dosedashvf.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1075915739015:android:2aa2873bb13b951811cd22",
+        "android_client_info": {
+          "package_name": "com.example.ddpatient"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD0jquLDBLHRqn6bisMOaAnfakxutq53HU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1075915739015:android:79d6decc62b456d811cd22",
+        "android_client_info": {
+          "package_name": "com.example.dosedash"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD0jquLDBLHRqn6bisMOaAnfakxutq53HU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
