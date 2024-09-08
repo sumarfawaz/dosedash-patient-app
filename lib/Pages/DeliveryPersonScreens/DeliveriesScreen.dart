@@ -13,7 +13,8 @@ class DeliveriesScreen extends StatefulWidget {
 class _DeliveriesScreenState extends State<DeliveriesScreen> {
   List<QueryDocumentSnapshot<Map<String, dynamic>>> _localNotifications = [];
 
-  Stream<List<QueryDocumentSnapshot<Map<String, dynamic>>>> _fetchNotifications() {
+  Stream<List<QueryDocumentSnapshot<Map<String, dynamic>>>>
+      _fetchNotifications() {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       print('No user is logged in.');
@@ -24,30 +25,34 @@ class _DeliveriesScreenState extends State<DeliveriesScreen> {
 
     return FirebaseFirestore.instance
         .collection('notifications')
-        .where('deliveryPersonIds', arrayContains: userId)
-        .where('notificationType', isEqualTo: 'order') // Filter by notification type
+        .where('deliveryPersonIds', isEqualTo: userId)
+        .where('notificationType',
+            isEqualTo: 'order') // Filter by notification type
         .snapshots()
         .map((snapshot) {
-          print('Received snapshot with ${snapshot.docs.length} documents.');
+      print('Received snapshot with ${snapshot.docs.length} documents.');
 
-          // Use a Map to store the latest notification for each order
-          final notificationsMap = <String, QueryDocumentSnapshot<Map<String, dynamic>>>{};
+      // Use a Map to store the latest notification for each order
+      final notificationsMap =
+          <String, QueryDocumentSnapshot<Map<String, dynamic>>>{};
 
-          for (final doc in snapshot.docs) {
-            final notification = doc.data();
-            final timestamp = notification['timestamp'] as Timestamp?; // Use timestamp or another unique field
+      for (final doc in snapshot.docs) {
+        final notification = doc.data();
+        final timestamp = notification['timestamp']
+            as Timestamp?; // Use timestamp or another unique field
 
-            if (timestamp != null) {
-              // Use timestamp to create a unique key
-              final key = '${userId}_${timestamp.seconds}'; // Create a unique key using userId and timestamp
+        if (timestamp != null) {
+          // Use timestamp to create a unique key
+          final key =
+              '${userId}_${timestamp.seconds}'; // Create a unique key using userId and timestamp
 
-              // Add or replace the notification in the map
-              notificationsMap[key] = doc;
-            }
-          }
+          // Add or replace the notification in the map
+          notificationsMap[key] = doc;
+        }
+      }
 
-          return notificationsMap.values.toList();
-        });
+      return notificationsMap.values.toList();
+    });
   }
 
   void _handleDecline(String notificationId) {
@@ -83,7 +88,8 @@ class _DeliveriesScreenState extends State<DeliveriesScreen> {
             return Center(child: Text('Error: ${snapshot.error}'));
           }
 
-          final notifications = snapshot.data ?? []; // Use the data from the stream
+          final notifications =
+              snapshot.data ?? []; // Use the data from the stream
           print('Notifications count: ${notifications.length}');
 
           if (notifications.isEmpty) {
@@ -94,10 +100,13 @@ class _DeliveriesScreenState extends State<DeliveriesScreen> {
             itemCount: notifications.length,
             itemBuilder: (context, index) {
               final notification = notifications[index].data();
-              final pharmacyAddresses = List<String>.from(notification['pharmacy_address'] ?? []);
-              final pharmacyNames = List<String>.from(notification['pharmacy_name'] ?? []);
+              final pharmacyAddresses =
+                  List<String>.from(notification['pharmacy_address'] ?? []);
+              final pharmacyNames =
+                  List<String>.from(notification['pharmacy_name'] ?? []);
               final patientName = notification['patient_name'] ?? 'Unknown';
-              final orderItems = List<Map<String, dynamic>>.from(notification['orderItems'] ?? []);
+              final orderItems = List<Map<String, dynamic>>.from(
+                  notification['orderItems'] ?? []);
               final orderItemCount = orderItems.length;
               final pharmacyCount = pharmacyAddresses.length;
 
@@ -109,8 +118,10 @@ class _DeliveriesScreenState extends State<DeliveriesScreen> {
                       builder: (context) => PickupPointsScreen(
                         pharmacyAddresses: pharmacyAddresses,
                         pharmacyNames: pharmacyNames,
-                        patientAddress: notification['patient_address'] ?? 'Address not available',
-                        notificationId: notifications[index].id, // Pass notification ID
+                        patientAddress: notification['patient_address'] ??
+                            'Address not available',
+                        notificationId:
+                            notifications[index].id, // Pass notification ID
                         onDecline: () {
                           _handleDecline(notifications[index].id);
                         },
@@ -119,12 +130,14 @@ class _DeliveriesScreenState extends State<DeliveriesScreen> {
                   );
                 },
                 child: Card(
-                  margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                  margin: const EdgeInsets.symmetric(
+                      vertical: 8.0, horizontal: 16.0),
                   elevation: 5.0,
                   child: ListTile(
                     contentPadding: const EdgeInsets.all(16.0),
                     title: Text('Delivery for $patientName'),
-                    subtitle: Text('Order Items: $orderItemCount\nPickup Locations: $pharmacyCount'),
+                    subtitle: Text(
+                        'Order Items: $orderItemCount\nPickup Locations: $pharmacyCount'),
                     trailing: const Icon(Icons.arrow_forward),
                   ),
                 ),

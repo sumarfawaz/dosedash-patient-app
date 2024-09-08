@@ -185,8 +185,6 @@ class NotificationService {
   //   }
   // }
 
-
-
   Future<void> pushNotifications(String? userId) async {
     // Save the subscription reference
     orderSubscription = FirebaseFirestore.instance

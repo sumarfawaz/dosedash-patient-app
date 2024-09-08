@@ -367,7 +367,7 @@ class _DeliveryHomeScreenState extends State<DeliveryHomeScreen> {
               backgroundColor: Colors.white),
         ],
         currentIndex: _selectedIndex,
-        selectedItemColor: Color(0xFF69F0AE),
+        selectedItemColor: Colors.greenAccent,
         unselectedItemColor: Colors.blueGrey,
         selectedLabelStyle: TextStyle(fontSize: 12),
         unselectedLabelStyle: TextStyle(fontSize: 12),
